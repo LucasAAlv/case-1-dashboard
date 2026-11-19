@@ -5,3 +5,9 @@
 
 # Sistema
 .DS_Store
+
+# Node e build
+node_modules/
+dist/
+coverage/
+*.log
