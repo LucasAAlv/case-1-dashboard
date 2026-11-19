@@ -18,7 +18,8 @@ export interface SyncState {
 export interface StoreCommit {
   upsert?: readonly CardRecord[];
   remove?: readonly string[];
-  state: SyncState;
+  /** Omitido quando a gravação não muda o estado do sync (páginas do incremental, exclusão por evento). */
+  state?: SyncState;
 }
 
 /**
