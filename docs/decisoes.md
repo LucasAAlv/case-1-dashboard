@@ -97,3 +97,26 @@ Registro das decisões do Case 1, com data, opção escolhida, alternativas e mo
 **Escolha:** a dimensão "situação de vencimento" (vencido, vence em até 7 dias, a vencer) é a única calculada na renderização. As demais dimensões derivadas são calculadas uma vez, no sync.
 
 **Motivo:** ela depende do dia de hoje, então gravá-la no cache a deixaria desatualizada no dia seguinte.
+
+---
+
+## D9. Correções da revisão de código (19/11/2026)
+
+Uma revisão no nível *high* encontrou 14 pontos. Foram corrigidos, com teste quando cabia:
+
+- **Carga retomada não vale como reconciliação.** Um card excluído entre as tentativas, numa página já gravada, ficaria para sempre no cache.
+- **O sync confere o usuário da sessão.** O `me { id }` vai na mesma query do `cards_count`. Se a sessão da Pipefy mudar de usuário, o sync aborta antes de gravar, porque os dados de B não podem entrar no cache de A.
+- **A divergência de contagem é confirmada antes de reconciliar.** Um card criado entre a leitura do `cards_count` e o incremental dispararia ~400 chamadas sem necessidade; a confirmação custa 1.
+- **`hasNextPage` sem `endCursor` é tratado como erro, não como fim.** Tratar como fim marcaria uma carga incompleta como pronta e faria a reconciliação apagar os cards não vistos.
+- **Commit sem estado.** A exclusão por evento e as páginas do incremental não reescrevem o estado do sync.
+- **Visões salvas.** Uma falha ao ler deixa de virar lista vazia (salvar depois apagaria as visões) e as gravações entram numa fila.
+- **Concorrência na tela:**
+  - o sync e a limpeza do cache compartilham o mesmo mutex;
+  - um sync pedido durante outro roda em seguida;
+  - limpar o cache não trava com outra aba aberta;
+  - os gráficos são criados junto com o redesenho, sem instâncias perdidas.
+- **Rosca por mês** fica bloqueada, porque teria mais fatias que cores.
+
+**Não corrigido:** um cursor salvo recusado pela API faz a retomada falhar sempre. É improvável e "Limpar cache local" resolve; ficou documentado em limitações.
+
+**A verificar:** se o `cards_count` respeita as permissões de quem consulta. Isso exige um segundo usuário com visão parcial.

@@ -76,7 +76,8 @@ sequenceDiagram
   App->>DB: abre pipefy-dashboard:<me.id>:<pipeId>
   App->>DB: lê cards + visões salvas
   App-->>U: desenha o que já está no cache
-  App->>API: pipe { cards_count }
+  App->>API: { me { id } pipe { cards_count } }
+  Note over App: aborta se a sessão mudou de usuário
   alt cache vazio ou carga interrompida
     loop até hasNextPage = false
       App->>API: allCards(first: 50, after: cursor)
@@ -110,9 +111,16 @@ sequenceDiagram
 - **Com o app aberto:** o evento `onCardDeleted` do `pipe-view` remove o card do cache na hora.
 - **Com o app fechado:** a cada sync, o app compara o `cards_count` do pipe com o cache. Se forem diferentes e o `cards_count` tiver mudado desde a última conferência, pagina o pipe de novo, faz upsert e remove os ausentes.
 
-### Eventos ao vivo
+### Eventos ao vivo e concorrência
 
-`onCardCreated` e `onCardUpdated` agendam um incremental 2 s depois, juntando rajadas de eventos. Um sync roda por vez em cada aba. Entre abas, o Web Locks evita que duas abas do mesmo usuário sincronizem ao mesmo tempo.
+- `onCardCreated` e `onCardUpdated` agendam um incremental 2 s depois, juntando rajadas de eventos.
+- Um trabalho por vez em cada aba (sync ou limpeza do cache). Um sync pedido durante outro roda logo depois que o primeiro termina, então nenhum evento se perde.
+- Entre abas, o Web Locks serializa os syncs do mesmo usuário e pipe. A segunda aba espera a primeira e depois faz um incremental barato, que já recarrega o cache.
+- O `onCardDeleted` remove o card sem tocar no estado do sync, para não sobrescrever o que um sync em andamento gravou.
+
+### Troca de sessão
+
+Todo sync relê o `me.id` na mesma chamada do `cards_count`, sem custo extra. Se alguém sair da conta e entrar com outro usuário em outra aba, o dashboard aberto para de sincronizar antes de gravar qualquer coisa no cache do usuário anterior e pede para recarregar a página.
 
 ---
 
@@ -123,9 +131,9 @@ Valores para o pipe do case (20 mil cards, 50 por página):
 | Situação | Chamadas |
 | --- | --- |
 | Identificar o usuário (`me`) | 1 por abertura |
-| Carga inicial completa | 1 (`cards_count`) + 400 páginas = **401** |
-| Sync sem mudanças | 1 (`cards_count`) + 1 (incremental vazio) = **2** |
-| Sync com *k* cards alterados (*k* ≥ 1) | 1 + ⌈*k*/50⌉ |
+| Carga inicial completa | 1 (`me` + `cards_count`) + 400 páginas = **401** |
+| Sync sem mudanças | 1 (`me` + `cards_count`) + 1 (incremental vazio) = **2** |
+| Sync com *k* cards alterados (*k* ≥ 1) | 1 + ⌈*k*/50⌉, +1 se as contagens divergirem (confirmação antes de reconciliar) |
 | Reconciliação (só quando o `cards_count` muda) | +400 |
 
 Uma abertura comum custa **3 chamadas**, contra cerca de 400 se o app baixasse tudo a cada vez. O app mostra, depois de cada sync, quantas chamadas ele fez.
@@ -150,6 +158,8 @@ Uma abertura comum custa **3 chamadas**, contra cerca de 400 se o app baixasse t
 - **Criação + exclusão no mesmo intervalo** mantém a contagem e esconde a exclusão até o próximo `cards_count` diferente. Com o app aberto, o evento `onCardDeleted` cobre esse caso.
 - **Mesmo navegador, vários usuários:** os bancos são separados por usuário, mas ficam no mesmo disco. O isolamento é do app, não do sistema operacional.
 - **Armazenamento do navegador:** o IndexedDB de um iframe de terceiro fica particionado pelo site de topo. O Safari pode apagar esses dados depois de alguns dias sem uso, e aí acontece uma nova carga completa.
+- **Cursor recusado:** se a API passar a recusar o cursor salvo de uma carga interrompida, a retomada falha sempre com o mesmo erro. "Limpar cache local" recomeça do zero.
+- **Semântica do `cards_count`:** foi confirmado que ele conta os cards da fase concluída (deu 20.000, todos em "Concluded"). Não foi testado se ele respeita as permissões de quem consulta. Se não respeitar, um usuário com visão parcial faz uma reconciliação (~400 chamadas) a cada mudança no total do pipe.
 - **Eventos do pipe-view:** segundo a documentação, o `onCardUpdated` cobre só mudanças de vencimento. As demais edições chegam pelo incremental, quando o app abre ou quando o usuário clica em "Sincronizar agora".
 
 ---
