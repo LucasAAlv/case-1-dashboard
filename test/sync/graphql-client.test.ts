@@ -49,7 +49,7 @@ describe('createSdkClient', () => {
 });
 
 describe('withRetry', () => {
-  const noSleep = () => Promise.resolve();
+  const noSleep = (_ms: number) => Promise.resolve();
 
   it('repete erros retentáveis com backoff exponencial e devolve o resultado', async () => {
     const sleep = vi.fn(noSleep);
