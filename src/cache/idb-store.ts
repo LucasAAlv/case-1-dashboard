@@ -26,19 +26,32 @@ export interface IdbCardStore extends CardStore {
   close(): void;
 }
 
-export async function openCardStore(userId: string, pipeId: string): Promise<IdbCardStore> {
+export interface OpenOptions {
+  /** Outra aba pediu para apagar ou atualizar o banco e esta conexão foi fechada. */
+  onClosedByOtherTab?: () => void;
+}
+
+export async function openCardStore(userId: string, pipeId: string, options: OpenOptions = {}): Promise<IdbCardStore> {
   const db = await openDB<CacheSchema>(cacheName(userId, pipeId), VERSION, {
     upgrade(database) {
       database.createObjectStore('cards', { keyPath: 'id' });
       database.createObjectStore('meta');
     },
+    // Sem fechar aqui, o `deleteDB` de outra aba ficaria bloqueado para sempre.
+    blocking() {
+      db.close();
+      options.onClosedByOtherTab?.();
+    },
   });
   return new IdbStore(db);
 }
 
-/** Apaga o cache de um usuário (botão "limpar cache" e testes). */
-export async function deleteCardStore(userId: string, pipeId: string): Promise<void> {
-  await deleteDB(cacheName(userId, pipeId));
+/**
+ * Apaga o cache de um usuário (botão "limpar cache" e testes). Se outra aba
+ * ainda segurar o banco, `onBlocked` avisa; a exclusão continua quando ela fechar.
+ */
+export async function deleteCardStore(userId: string, pipeId: string, onBlocked?: () => void): Promise<void> {
+  await deleteDB(cacheName(userId, pipeId), onBlocked ? { blocked: onBlocked } : {});
 }
 
 const ignore = () => {};
