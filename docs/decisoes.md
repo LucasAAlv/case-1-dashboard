@@ -62,15 +62,17 @@ Registro das decisões do Case 1, com data, opção escolhida, alternativas e mo
 
 ## D5. Reconciliação de exclusões pelo `cards_count` (19/11/2026)
 
-**Escolha:** a cada sync, o app compara o `cards_count` do pipe com a contagem do cache. Se forem diferentes, pagina só os ids do pipe e remove do cache o que sumiu. O `cards_count` usado fica salvo, e a reconciliação só roda de novo quando ele mudar.
+**Escolha:** a cada sync, o app compara o `cards_count` do pipe com a contagem do cache. Se forem diferentes, pagina o pipe inteiro, faz upsert de tudo e remove do cache o que não veio. O `cards_count` usado fica salvo, e a reconciliação só roda de novo quando ele mudar.
 
-**Motivo:** exclusões não aparecem no filtro por `updated_at`.
+**Motivo:** exclusões não aparecem no filtro por `updated_at`. Baixar os cards completos custa o mesmo número de chamadas que baixar só os ids, porque o `allCards` devolve 50 por página de qualquer jeito. Assim, na mesma passada, a reconciliação também recupera um card que falte no cache com `updated_at` antigo.
 
 **Ponto a observar:** um usuário que não enxerga todos os cards teria sempre contagens diferentes. Guardar o `cards_count` da última reconciliação evita refazer ~400 chamadas a cada abertura nesse caso.
 
 **Custo:** a reconciliação custa o mesmo número de páginas de uma carga completa, já que o `allCards` não tem outro jeito de listar ids.
 
-**Limitação:** uma criação somada a uma exclusão no mesmo intervalo mantém a contagem igual e esconde a exclusão. O listener `onCardDeleted` do `pipe-view` cobre as exclusões feitas com o app aberto.
+**Limitações:**
+- Uma criação somada a uma exclusão no mesmo intervalo mantém a contagem igual e esconde a exclusão. O listener `onCardDeleted` do `pipe-view` cobre as exclusões feitas com o app aberto.
+- Quando muda a visibilidade do usuário (ele passa a enxergar cards antigos ou perde acesso a eles), nenhuma das duas contagens muda, e o app não detecta isso sozinho. O botão "Limpar cache local" força uma carga completa.
 
 ---
 
