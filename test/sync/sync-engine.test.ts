@@ -148,10 +148,21 @@ describe('SyncEngine: exclusões', () => {
     pipe.cards = pipe.cards.filter((c) => c.id !== '42');
     const result = await engine(pipe, store, clock).sync();
     expect(result).toMatchObject({ reconciled: true, deleted: 1 });
-    // cards_count + incremental + 3 páginas de ids
+    // cards_count + incremental + 3 páginas da reconciliação
     expect(result.calls).toBe(5);
     expect(store.cards.has('42')).toBe(false);
     expect(store.state?.reconciledPipeCount).toBe(119);
+  });
+
+  it('quando reconcilia, também recupera card que falta no cache com updated_at antigo', async () => {
+    // O filtro por updated_at nunca traria o card 42 de volta. Quando a
+    // contagem muda (aqui, duas exclusões), a reconciliação corrige os dois lados.
+    store.cards.delete('42');
+    pipe.cards = pipe.cards.filter((c) => c.id !== '43' && c.id !== '44');
+    const result = await engine(pipe, store, clock).sync();
+    expect(result).toMatchObject({ reconciled: true, deleted: 2, calls: 5 });
+    expect(store.cards.has('42')).toBe(true);
+    expect(await store.count()).toBe(118);
   });
 
   it('não reconcilia de novo se o cards_count não mudou desde a última reconciliação', async () => {

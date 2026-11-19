@@ -51,13 +51,6 @@ describe('createPipefyApi', () => {
     expect(() => createPipefyApi(client, '1) { x }')).toThrow();
   });
 
-  it('busca só os ids na reconciliação', async () => {
-    const { client, request } = clientReturning(page);
-    const result = await createPipefyApi(client, '1').cardIdsPage(null);
-    expect(result.items).toEqual(['1']);
-    expect(request.mock.calls[0]![0]).not.toContain('fields');
-  });
-
   it('lê o cards_count do pipe', async () => {
     const { client } = clientReturning({ pipe: { cards_count: 20000 } });
     await expect(createPipefyApi(client, '1').cardsCount()).resolves.toBe(20000);

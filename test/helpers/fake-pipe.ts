@@ -58,14 +58,6 @@ export class FakePipe implements PipefyApi {
     return this.paginate(items, after);
   }
 
-  async cardIdsPage(after: string | null) {
-    this.tick();
-    return this.paginate(
-      this.sorted().map((c) => c.id),
-      after,
-    );
-  }
-
   async cardsCount() {
     this.tick();
     return this.reportedCount ?? this.cards.length;
