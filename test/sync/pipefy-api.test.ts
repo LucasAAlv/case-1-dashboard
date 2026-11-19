@@ -51,8 +51,10 @@ describe('createPipefyApi', () => {
     expect(() => createPipefyApi(client, '1) { x }')).toThrow();
   });
 
-  it('lê o cards_count do pipe', async () => {
-    const { client } = clientReturning({ pipe: { cards_count: 20000 } });
-    await expect(createPipefyApi(client, '1').cardsCount()).resolves.toBe(20000);
+  it('lê o usuário da sessão e o cards_count numa chamada só', async () => {
+    const { client, request } = clientReturning({ me: { id: '306836299' }, pipe: { cards_count: 20000 } });
+    await expect(createPipefyApi(client, '1').status()).resolves.toEqual({ userId: '306836299', cardsCount: 20000 });
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(request.mock.calls[0]![0]).toBe('{ me { id } pipe(id: 1) { cards_count } }');
   });
 });

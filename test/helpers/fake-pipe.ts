@@ -15,8 +15,8 @@ export function rawCard(id: number, updatedAt = '2026-11-12T18:56:30Z', valor = 
 }
 
 /**
- * Pipe falso que imita o `allCards`: ordem crescente de id, cursor por
- * posição, filtro `updated_at gte`. Conta as chamadas e permite simular falhas.
+ * Pipe falso que imita o `allCards`: ordem crescente de id, cursor pelo
+ * último id, filtro `updated_at gte`. Conta as chamadas e permite simular falhas.
  */
 export class FakePipe implements PipefyApi {
   cards: RawCard[];
@@ -25,6 +25,12 @@ export class FakePipe implements PipefyApi {
   failOnCall: number | null = null;
   /** Total que o `cards_count` devolve; por padrão, o tamanho real. */
   reportedCount: number | null = null;
+  /** Usuário da sessão atual da Pipefy (`me.id`). */
+  userId = 'u1';
+  /** Roda antes de responder cada página: simula mudanças concorrentes. */
+  beforeCardsPage: (() => void) | null = null;
+  /** Simula a anomalia `hasNextPage: true` sem `endCursor`. */
+  dropCursor = false;
 
   constructor(
     cards: RawCard[],
@@ -42,25 +48,26 @@ export class FakePipe implements PipefyApi {
     return [...this.cards].sort((a, b) => Number(a.id) - Number(b.id));
   }
 
-  private paginate<T>(items: T[], after: string | null): CardsPage<T> {
-    const start = after === null ? 0 : Number(after);
-    const end = start + this.pageSize;
-    return {
-      items: items.slice(start, end),
-      hasNextPage: end < items.length,
-      endCursor: items.length ? String(Math.min(end, items.length)) : null,
-    };
+  /** Cursor por id, como o da API real: exclusões não deslocam a página seguinte. */
+  private paginate(items: RawCard[], after: string | null): CardsPage<RawCard> {
+    let start = after === null ? 0 : items.findIndex((c) => Number(c.id) > Number(after));
+    if (start === -1) start = items.length;
+    const page = items.slice(start, start + this.pageSize);
+    const end = start + page.length;
+    return { items: page, hasNextPage: end < items.length, endCursor: page.at(-1)?.id ?? null };
   }
 
   async cardsPage({ after, updatedSince }: { after: string | null; updatedSince: string | null }) {
     this.tick();
+    this.beforeCardsPage?.();
     const items = this.sorted().filter((c) => updatedSince === null || c.updated_at >= updatedSince);
-    return this.paginate(items, after);
+    const page = this.paginate(items, after);
+    return this.dropCursor ? { ...page, endCursor: null } : page;
   }
 
-  async cardsCount() {
+  async status() {
     this.tick();
-    return this.reportedCount ?? this.cards.length;
+    return { userId: this.userId, cardsCount: this.reportedCount ?? this.cards.length };
   }
 
   update(id: number, updatedAt: string, valor: string) {
@@ -80,7 +87,7 @@ export class MemoryStore implements CardStore {
   async commit({ upsert = [], remove = [], state }: StoreCommit) {
     for (const card of upsert) this.cards.set(card.id, card);
     for (const id of remove) this.cards.delete(id);
-    this.state = structuredClone(state);
+    if (state) this.state = structuredClone(state);
   }
 
   async count() {
