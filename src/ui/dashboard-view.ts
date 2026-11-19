@@ -1,5 +1,5 @@
 import type { Chart } from 'chart.js';
-import { aggregate, type Aggregation, type Dimension } from '../analytics/aggregate';
+import { aggregate, type AggregateRow, type Aggregation, type Dimension } from '../analytics/aggregate';
 import {
   AGGREGATIONS,
   CHART_TYPES,
@@ -38,8 +38,11 @@ export class DashboardView {
   private readonly meta = h('p', { class: 'meta' });
   private readonly grid = h('section', { class: 'grid', 'aria-label': 'Visões' });
   private readonly syncButton = h('button', { type: 'button', class: 'secondary' }, 'Sincronizar agora');
+  private readonly clearButton = h('button', { type: 'button', class: 'link' }, 'Limpar cache local');
   private readonly addButton = h('button', { type: 'submit' }, 'Adicionar visão');
-  private charts = new Map<string, Chart>();
+  private charts: Chart[] = [];
+  private editable = true;
+  private specCount = 0;
 
   constructor(
     private readonly root: HTMLElement,
@@ -49,14 +52,13 @@ export class DashboardView {
   }
 
   private header() {
-    const clear = h('button', { type: 'button', class: 'link' }, 'Limpar cache local');
     this.syncButton.addEventListener('click', () => this.handlers.onSync());
-    clear.addEventListener('click', () => this.handlers.onClearCache());
+    this.clearButton.addEventListener('click', () => this.handlers.onClearCache());
     return h(
       'header',
       { class: 'top' },
       h('div', {}, h('h1', {}, 'Dashboard de Cards'), this.meta),
-      h('div', { class: 'top-actions' }, this.status, this.progress, this.syncButton, clear),
+      h('div', { class: 'top-actions' }, this.status, this.progress, this.syncButton, this.clearButton),
     );
   }
 
@@ -66,6 +68,14 @@ export class DashboardView {
     const chartType = h('select', { name: 'chartType' }, ...options(CHART_TYPES, 'bar'));
     const limit = h('input', { name: 'limit', type: 'number', min: 1, max: MAX_LIMIT, value: 10 });
     const title = h('input', { name: 'title', type: 'text', maxlength: 80, placeholder: 'Automático' });
+
+    // Rosca por mês teria 12+ fatias para 8 cores: na linha do tempo, use barras ou linha.
+    const syncChartTypes = () => {
+      const doughnut = chartType.querySelector<HTMLOptionElement>('option[value="doughnut"]')!;
+      doughnut.disabled = dimension.value === 'dueMonth';
+      if (doughnut.disabled && chartType.value === 'doughnut') chartType.value = 'line';
+    };
+    dimension.addEventListener('change', syncChartTypes);
 
     const form = h(
       'form',
@@ -97,7 +107,23 @@ export class DashboardView {
   setStatus(text: string, kind: StatusKind = 'info') {
     this.status.textContent = text;
     this.status.dataset.kind = kind;
-    this.syncButton.disabled = kind === 'busy';
+  }
+
+  /** Desabilita sync e limpeza enquanto um trabalho está em andamento. */
+  setBusy(busy: boolean) {
+    this.syncButton.disabled = busy;
+    this.clearButton.disabled = busy;
+  }
+
+  /** Sem conseguir ler as visões salvas, editar sobrescreveria o que não foi lido. */
+  setChartsEditable(editable: boolean) {
+    this.editable = editable;
+    this.updateAddButton();
+    for (const button of this.grid.querySelectorAll<HTMLButtonElement>('button.remove')) button.disabled = !editable;
+  }
+
+  private updateAddButton() {
+    this.addButton.disabled = !this.editable || this.specCount >= MAX_CHARTS;
   }
 
   setProgress(loaded: number, total: number | null) {
@@ -111,9 +137,10 @@ export class DashboardView {
 
   /** Redesenha todas as visões a partir do cache em memória. */
   renderCharts(specs: readonly ChartSpec[], cards: readonly CardRecord[]) {
-    for (const chart of this.charts.values()) chart.destroy();
-    this.charts.clear();
-    this.addButton.disabled = specs.length >= MAX_CHARTS;
+    for (const chart of this.charts) chart.destroy();
+    this.charts = [];
+    this.specCount = specs.length;
+    this.updateAddButton();
 
     if (specs.length === 0) {
       this.grid.replaceChildren(
@@ -123,11 +150,16 @@ export class DashboardView {
     }
 
     const today = localToday();
+    const pending: [HTMLCanvasElement, ChartSpec, AggregateRow[]][] = [];
     this.grid.replaceChildren(
       ...specs.map((spec) => {
         const rows = aggregate(cards, spec, { today });
         const canvas = h('canvas', { role: 'img', 'aria-label': spec.title });
-        const remove = h('button', { type: 'button', class: 'link', 'aria-label': `Remover ${spec.title}` }, 'Remover');
+        const remove = h(
+          'button',
+          { type: 'button', class: 'link remove', 'aria-label': `Remover ${spec.title}`, disabled: !this.editable },
+          'Remover',
+        );
         remove.addEventListener('click', () => this.handlers.onRemoveChart(spec.id));
 
         const card = h(
@@ -137,10 +169,13 @@ export class DashboardView {
           rows.length ? h('div', { class: 'chart-box' }, canvas) : h('p', { class: 'empty' }, 'Sem dados para esta visão.'),
           rows.length > 0 && dataTable(spec, rows),
         );
-        if (rows.length) queueMicrotask(() => this.charts.set(spec.id, renderChart(canvas, spec, rows)));
+        if (rows.length) pending.push([canvas, spec, rows]);
         return card;
       }),
     );
+    // Cria os gráficos já com o canvas no DOM, na mesma chamada: nenhuma
+    // instância fica sem `destroy` se outro redesenho vier logo em seguida.
+    this.charts = pending.map(([canvas, spec, rows]) => renderChart(canvas, spec, rows));
   }
 }
 
@@ -149,7 +184,7 @@ function field(label: string, control: HTMLElement) {
 }
 
 /** Tabela com os mesmos números do gráfico: acessível e conferível. */
-function dataTable(spec: ChartSpec, rows: ReturnType<typeof aggregate>) {
+function dataTable(spec: ChartSpec, rows: readonly AggregateRow[]) {
   return h(
     'details',
     { class: 'data' },
