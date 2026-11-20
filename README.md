@@ -74,9 +74,11 @@ O build sai em `dist/`, com `manifest.json`, a página de init (`index.html`) e 
 
 2. **Registre o app** em https://app.pipefy.com/developers/apps → "Add new app", com um nome e a URL do manifest (`https://<host>/manifest.json`). Um app privado fica visível só na org e não passa por revisão.
 
-3. **Abra o pipe** e escolha a visão **Dashboard** no seletor de visões, ao lado de Kanban, lista e calendário.
+3. **Ative o app no pipe:** no pipe, **Manage → Tools → Apps**, encontre "Dashboard de Cards" e ative. A documentação de desenvolvedor não descreve esse passo; sem ele, a Pipefy nem carrega o manifest.
 
-A primeira abertura de cada usuário faz a carga completa (~400 chamadas, com progresso na tela). As aberturas seguintes custam cerca de 3 chamadas.
+4. **Abra a visão Dashboard**, que passa a aparecer na barra de visões do pipe, ao lado de Kanban, List e Reports.
+
+A primeira abertura de cada usuário faz a carga completa, com progresso na tela. No pipe do case (20.000 cards), ela custou 401 chamadas e levou cerca de 2 min e 20 s. As aberturas seguintes custam 3 chamadas: `me`, mais `cards_count` e o incremental.
 
 > A Pipefy relê o manifest a cada carregamento. Um deploy quebrado afeta todos os usuários na hora. Antes da demo, publique, confira e não publique mais nada.
 

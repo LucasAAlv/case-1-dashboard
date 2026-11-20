@@ -138,6 +138,19 @@ Valores para o pipe do case (20 mil cards, 50 por página):
 
 Uma abertura comum custa **3 chamadas**, contra cerca de 400 se o app baixasse tudo a cada vez. O app mostra, depois de cada sync, quantas chamadas ele fez.
 
+### Medido dentro da Pipefy (19/11/2026, pipe 307434671)
+
+| Situação | Resultado |
+| --- | --- |
+| Carga inicial | **401 chamadas**, 20.000 cards gravados, cerca de **2 min e 20 s** (~0,35 s por página de 50 cards) |
+| "Sincronizar agora" sem mudanças | **2 chamadas** |
+| Recarregar a página | 20.000 cards lidos do cache e visões restauradas, mais 1 sync de 2 chamadas |
+
+Também ficou confirmado na prática:
+- o `PipefyApp.init()`/`render` e o `p.query` funcionam no iframe;
+- o IndexedDB persiste dentro do iframe da Pipefy;
+- o `p.set`/`p.get` privado guarda as visões.
+
 ---
 
 ## Isolamento por usuário
