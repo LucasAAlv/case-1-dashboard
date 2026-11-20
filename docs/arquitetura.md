@@ -12,7 +12,7 @@ Comparação feita em 20/11/2026: abri o construtor de Dashboards e a aba Report
 
 **O que o nativo já faz bem, e o app não tenta superar:**
 
-- No pipe, Valor Total é um campo de moeda e Data Limite é um campo de data. O Dashboard nativo soma, tira média, mínimo, máximo e total acumulado do Valor Total, e usa a Data Limite como eixo de tempo. O texto (`"1285947.3"`, `"27/02/2027"`) é só o formato do JSON da API, e por isso o app converte na entrada.
+- No pipe, Valor Total é um campo `number` e Data Limite é um campo `date` (conferido com `pipe { start_form_fields { id type } }`). O Dashboard nativo soma, tira média, mínimo, máximo e total acumulado do Valor Total, e usa a Data Limite como eixo de tempo. O texto (`"1285947.3"`, `"27/02/2027"`) é só o formato do JSON da API, e por isso o app converte na entrada.
 - Tem 8 formatos (área, barra, calendário, linha, número, pizza, dispersão, tabela). O app tem 4.
 - Clicar num ponto do gráfico abre os cards por trás dele.
 - Os dados são calculados no servidor, em tempo real, sem carga inicial e sem hospedagem.
