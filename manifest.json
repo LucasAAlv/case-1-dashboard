@@ -1,0 +1,9 @@
+{
+  "name": "Dashboard de Cards",
+  "short_description": "Monte gráficos sobre os cards do pipe",
+  "description": "Construtor de gráficos (dimensão, métrica, agregação e tipo) com cache local por usuário e sincronização incremental.",
+  "icon": "./icon.svg",
+  "author": "Lucas Alves",
+  "init_url": "./",
+  "features": ["pipe-view"]
+}

@@ -1,0 +1,1 @@
+import"./modulepreload-polyfill-P2Xu9kJm.js";var e={icon:`./icon.svg`,text:`Dashboard`,url:`./pipe-view.html`};window.PipefyApp?.initCall({"pipe-view":()=>e});
