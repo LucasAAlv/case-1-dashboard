@@ -8,8 +8,31 @@ As decisões, com alternativas e motivos, estão em [decisoes.md](decisoes.md). 
 
 ## Por que um app, se o pipe já tem Reports e Dashboards?
 
-| Necessidade | Recurso nativo | Este app |
+Comparação feita em 20/11/2026: abri o construtor de Dashboards e a aba Reports do pipe 307434671, sem salvar nada, e li a Central de Ajuda ([What are dashboards](https://help.pipefy.com/en/articles/5610976-what-are-dashboards), [How to create dashboards](https://help.pipefy.com/en/articles/6047064-how-to-create-dashboards), [Numeric features](https://help.pipefy.com/en/articles/8451892-numeric-features-transform-data-in-results-with-pipefy)).
+
+**O que o nativo já faz bem, e o app não tenta superar:**
+
+- No pipe, Valor Total é um campo de moeda e Data Limite é um campo de data. O Dashboard nativo soma, tira média, mínimo, máximo e total acumulado do Valor Total, e usa a Data Limite como eixo de tempo. O texto (`"1285947.3"`, `"27/02/2027"`) é só o formato do JSON da API, e por isso o app converte na entrada.
+- Tem 8 formatos (área, barra, calendário, linha, número, pizza, dispersão, tabela). O app tem 4.
+- Clicar num ponto do gráfico abre os cards por trás dele.
+- Os dados são calculados no servidor, em tempo real, sem carga inicial e sem hospedagem.
+- Reports são tabelas com filtros, fórmulas de soma, média, mínimo e máximo, e exportação.
+
+**O que o app faz e o nativo não faz, nas mesmas condições:**
+
+| Necessidade | Dashboard nativo (verificado) | Este app |
 | --- | --- | --- |
+| Agrupar a empresa sem o sufixo ("Aperture Holding" e "Aperture ME" → "Aperture") | A dimensão é o campo como está: na prévia, "Aperture Holding" e "Aperture ME" saem em linhas separadas. Juntar exigiria criar um campo novo e preenchê-lo nos 20 mil cards, mudando o pipe; as fórmulas de automação documentadas são só numéricas | Dimensões derivadas `Empresa (sem sufixo)` e `Domínio do e-mail`, calculadas no sync, sem tocar no pipe |
+| "Vencido / vence em até 7 dias / a vencer" em relação a hoje | Os períodos prontos olham para trás (hoje, últimos 7 dias, mês passado...). Não há "próximos 7 dias". O filtro por data tem "antes de" e "depois de" uma data; não verifiquei se aceita "hoje" como valor relativo | Dimensão `Situação de vencimento`, recalculada a cada dia, com a janela futura |
+| Cada usuário monta as próprias visões | Os dashboards são do pipe e compartilhados com admins e membros. Na versão Basic, todos os admins e membros veem todos; permissão por dashboard é do Dashboards Pro | Visões salvas no escopo privado do usuário, pelo SDK |
+| Montar gráficos sem licença extra | Segundo a Central de Ajuda, dashboards personalizáveis são do **Dashboards Pro** (US$ 2,99 por usuário por mês, nos planos Business, Enterprise e Unlimited). O Basic traz os dashboards padrão | Não depende do Dashboards Pro. Não verifiquei em quais planos os Apps estão disponíveis |
+| Regra de negócio própria | Limitada às medidas, dimensões e filtros da tela | É código: uma dimensão, métrica ou regra nova é uma função testada |
+
+O app não substitui os recursos nativos. Ele cobre o que exige **dados derivados, regras relativas a hoje e visões pessoais**, sem alterar o pipe. O cache local com sync incremental não é vantagem sobre o nativo, que calcula no servidor. É o que permite a um app, que só tem a API, abrir rápido sem baixar 20 mil cards toda vez.
+
+**Não verificado:** se o Dashboard nativo filtra os números pelos cards que cada usuário enxerga. No app, esse isolamento vem do `p.query`, que roda com as permissões de quem está logado.
+
+--- | --- | --- |
 | Agrupar a empresa sem o sufixo societário ("Acme Holding", "Acme Group" → "Acme") | Agrupa pelo texto do campo | Dimensão derivada `Empresa (sem sufixo)` e `Domínio do e-mail` |
 | Valor Total guardado como texto, data no formato DD/MM/AAAA | Depende do tipo do campo | Conversão para número e data ISO na entrada, uma vez só |
 | "Vencidos vs. a vencer" em relação a hoje | Exige filtro manual | Dimensão `Situação de vencimento`, recalculada no dia |
