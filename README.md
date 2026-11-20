@@ -78,6 +78,8 @@ O build sai em `dist/`, com `manifest.json`, a página de init (`index.html`) e 
 
 4. **Abra a visão Dashboard**, que passa a aparecer na barra de visões do pipe, ao lado de Kanban, List e Reports.
 
+Aberta direto no navegador, fora do iframe, a URL publicada mostra só um aviso para abrir o app pela visão Dashboard do pipe. Sem o `appID` que a Pipefy coloca na URL, o SDK não funciona.
+
 A primeira abertura de cada usuário faz a carga completa, com progresso na tela. No pipe do case (20.000 cards), ela custou 401 chamadas e levou cerca de 2 min e 20 s. As aberturas seguintes custam 3 chamadas: `me`, mais `cards_count` e o incremental.
 
 > A Pipefy relê o manifest a cada carregamento. Um deploy quebrado afeta todos os usuários na hora. Antes da demo, publique, confira e não publique mais nada.
