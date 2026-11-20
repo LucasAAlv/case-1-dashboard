@@ -47,17 +47,30 @@ O build sai em `dist/`, com `manifest.json`, a página de init (`index.html`) e 
 
 ## Rodar dentro da Pipefy
 
-1. **Publique o `dist/` em HTTPS.** Serve qualquer hospedagem estática (GitHub Pages, Cloudflare Pages, Netlify) ou um túnel apontando para `npm run preview`, por exemplo:
+1. **Publique o `dist/` em HTTPS.** O app do case está publicado no GitHub Pages:
+
+   - manifest: https://lucasaalv.github.io/case-1-dashboard/manifest.json
+   - a branch `gh-pages` guarda só o build, num commit por publicação, separada do código-fonte
+
+   Para publicar uma nova versão a partir do commit atual:
 
    ```bash
-   npm run build && npm run preview -- --port 4173
+   npm run build && git worktree add --force ../gh-pages-publish gh-pages
    ```
 
    ```bash
-   cloudflared tunnel --url http://localhost:4173
+   git -C ../gh-pages-publish rm -rq . && cp -r dist/. ../gh-pages-publish/ && touch ../gh-pages-publish/.nojekyll
    ```
 
-   O host não pode mandar `X-Frame-Options: DENY/SAMEORIGIN`. Se houver CSP, o `frame-ancestors` precisa incluir `https://app.pipefy.com`. O `manifest.json` precisa responder com `application/json` e aceitar CORS de `https://app.pipefy.com`.
+   ```bash
+   git -C ../gh-pages-publish add -A && git -C ../gh-pages-publish commit -m "chore: publica o build do app" && git -C ../gh-pages-publish push origin gh-pages
+   ```
+
+   ```bash
+   git worktree remove ../gh-pages-publish
+   ```
+
+   O GitHub Pages serve o `manifest.json` como `application/json`, com `Access-Control-Allow-Origin: *`, e não manda `X-Frame-Options`, então o app pode abrir no iframe da Pipefy. Qualquer outra hospedagem estática serve, desde que não mande `X-Frame-Options: DENY/SAMEORIGIN`; se houver CSP, o `frame-ancestors` precisa incluir `https://app.pipefy.com`.
 
 2. **Registre o app** em https://app.pipefy.com/developers/apps → "Add new app", com um nome e a URL do manifest (`https://<host>/manifest.json`). Um app privado fica visível só na org e não passa por revisão.
 
@@ -65,7 +78,7 @@ O build sai em `dist/`, com `manifest.json`, a página de init (`index.html`) e 
 
 A primeira abertura de cada usuário faz a carga completa (~400 chamadas, com progresso na tela). As aberturas seguintes custam cerca de 3 chamadas.
 
-> A Pipefy relê o manifest a cada carregamento. Um deploy quebrado afeta todos os usuários na hora, e um túnel temporário muda de URL a cada reinício. Para a demo, prefira uma hospedagem estática.
+> A Pipefy relê o manifest a cada carregamento. Um deploy quebrado afeta todos os usuários na hora. Antes da demo, publique, confira e não publique mais nada.
 
 ## Como usar
 
