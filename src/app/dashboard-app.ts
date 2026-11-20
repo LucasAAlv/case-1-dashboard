@@ -92,7 +92,7 @@ export async function startDashboard(sdk: PipefyAppGlobal, p: PipefyClient, root
 
   function redraw() {
     view.renderCharts(specs, cards);
-    view.setMeta(`${integer.format(cards.length)} cards no cache local deste usuário`);
+    view.setMeta(cacheMeta(cards.length));
   }
 
   async function persistCharts() {
@@ -112,6 +112,9 @@ export async function startDashboard(sdk: PipefyAppGlobal, p: PipefyClient, root
     const total = progress.total === null ? '' : ` de ${integer.format(progress.total)}`;
     view.setStatus(`${label}: ${integer.format(progress.loaded)}${total}…`, 'busy');
     view.setProgress(progress.loaded, progress.total);
+    // Na carga inicial, `loaded` é o total já gravado no cache (inclui o que
+    // veio de uma tentativa anterior). Nas outras fases, conta outra coisa.
+    if (progress.phase === 'full-load') view.setMeta(cacheMeta(progress.loaded));
   }
 
   /** Um trabalho por vez nesta aba. Um sync pedido durante outro roda logo depois. */
@@ -232,6 +235,8 @@ function describe(result: SyncResult): string {
   if (result.skipped) parts.push(count(result.skipped, 'ignorado', 'ignorados') + ' por dados inválidos');
   return `${parts.join(' · ')} · ${dateTime.format(new Date())}`;
 }
+
+const cacheMeta = (n: number) => `${count(n, 'card', 'cards')} no cache local deste usuário`;
 
 const count = (n: number, one: string, many: string) => `${integer.format(n)} ${n === 1 ? one : many}`;
 
