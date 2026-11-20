@@ -120,3 +120,13 @@ Uma revisão no nível *high* encontrou 14 pontos. Foram corrigidos, com teste q
 **Não corrigido:** um cursor salvo recusado pela API faz a retomada falhar sempre. É improvável e "Limpar cache local" resolve; ficou documentado em limitações.
 
 **A verificar:** se o `cards_count` respeita as permissões de quem consulta. Isso exige um segundo usuário com visão parcial.
+
+---
+
+## D10. Tema claro fixo dentro da Pipefy (19/11/2026)
+
+**Escolha:** dentro da Pipefy, o app usa sempre o tema claro. Fora dela, com o SDK falso, continua seguindo o tema do sistema operacional.
+
+**Alternativa:** seguir o `prefers-color-scheme` em qualquer lugar, como na primeira versão.
+
+**Motivo:** a validação no pipe mostrou o problema. Num sistema em modo escuro, o dashboard ficava escuro dentro da tela clara da Pipefy. O tema do iframe segue o sistema operacional, não a Pipefy, e a documentação do SDK não mostra um jeito de saber o tema da Pipefy. O tema escuro continua nos tokens, validado, e volta a valer se essa informação aparecer.

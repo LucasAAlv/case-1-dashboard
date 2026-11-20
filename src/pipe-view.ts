@@ -16,6 +16,10 @@ async function main() {
     // SDK real lança erro e a página ficaria em branco.
     root.textContent = 'Este app roda dentro da Pipefy. Abra o pipe e escolha a visão Dashboard.';
     return;
+  } else {
+    // O iframe segue o tema do sistema, não o da Pipefy: num sistema escuro, o
+    // app ficava escuro dentro da tela clara. O mock continua seguindo o sistema.
+    document.documentElement.dataset.theme = 'light';
   }
 
   const sdk = window.PipefyApp;
