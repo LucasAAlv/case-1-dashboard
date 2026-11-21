@@ -41,7 +41,7 @@ Registro das decisões do Case 1, com data, opção escolhida, alternativas e mo
 
 ---
 
-## D4. Marca d'água = início do último sync completo (19/11/2026, ajusta a decisão 2 do case)
+## D4. Marca d'água = início do último sync completo (19/11/2026, substitui o "último `updated_at` visto")
 
 **Escolha:** depois de um sync completo, a marca d'água passa a ser o instante em que ele começou. O próximo incremental filtra `updated_at gte <marca - 5 min>` e faz upsert por id.
 

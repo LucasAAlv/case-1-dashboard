@@ -1,5 +1,5 @@
 /**
- * Marca d'água do sync incremental (decisão 2 do case, ajustada em 19/11/2026).
+ * Marca d'água do sync incremental (D4 em docs/decisoes.md).
  *
  * A marca é o instante em que o último sync completo começou. Tudo que foi
  * alterado antes desse instante já estava visível quando o sync paginou o pipe;
