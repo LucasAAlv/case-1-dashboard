@@ -92,7 +92,8 @@ Fatos da API que o código já trata e que não podem ser quebrados:
   - `meta`: chave `'sync'`, valor `SyncState` ([src/cache/card-store.ts](src/cache/card-store.ts)), com `phase`, `cursor`, `startedAt`, `watermark`, `lastSyncAt` e `reconciledPipeCount`.
 - Cards e estado gravam **na mesma transação** (`commit`): o cursor nunca fica à frente dos dados.
 - A marca d'água é o início do último sync completo, com margem de 5 min, e nunca anda para trás (D4).
-- Mudar um store ou o formato do `CardRecord` exige subir o `VERSION` e tratar o upgrade. É mudança no modelo de dados: proponha antes.
+- Campo novo no `CardRecord` **não** muda o `VERSION`: o IndexedDB guarda o objeto inteiro, sem schema. Os registros antigos só ficam sem o campo (ver DT3).
+- Criar, remover ou alterar um store ou índice exige subir o `VERSION`. O `upgrade()` atual cria os dois stores sem condição e lançaria `ConstraintError` num banco que já existe: ele precisa passar a ramificar por `oldVersion`. É mudança no modelo de dados: proponha antes.
 
 ### Visões (SDK)
 
@@ -125,7 +126,7 @@ Caminhos já usados no código:
   3. entrada no tipo `Dimension` e no `ORDER` de `src/analytics/aggregate.ts`;
   4. rótulo em `DIMENSIONS` de `src/charts/chart-spec.ts`.
 
-  Os caches existentes não são reprocessados (DT3), então o campo novo fica nulo até uma carga completa. Diga isso ao propor.
+  Os caches existentes não são reprocessados (DT3). Nenhum sync refaz a carga completa sozinho, então o campo novo fica nulo nos caches que já existem até o usuário usar "Limpar cache local". Diga isso ao propor.
 - **Nova dimensão que depende de hoje**: siga o `dueStatus`, calculado no `keyOf` da agregação e nunca gravado no cache (D8).
 - **Nova agregação**: `Aggregation` e `finalize` em `aggregate.ts`, depois `AGGREGATIONS` em `chart-spec.ts`, com teste em `test/unit/analytics/aggregate.test.ts`.
 - **Novo tipo de gráfico**: `ChartType` e `CHART_TYPES` em `chart-spec.ts`, depois o mapeamento em `src/charts/render-chart.ts`.
