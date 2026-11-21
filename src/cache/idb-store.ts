@@ -44,6 +44,8 @@ export async function deleteCardStore(userId: string, pipeId: string): Promise<v
   await deleteDB(cacheName(userId, pipeId));
 }
 
+const ignore = () => {};
+
 class IdbStore implements IdbCardStore {
   constructor(private readonly db: IDBPDatabase<CacheSchema>) {}
 
@@ -55,11 +57,20 @@ class IdbStore implements IdbCardStore {
   async commit({ upsert = [], remove = [], state }: StoreCommit): Promise<void> {
     const tx = this.db.transaction(['cards', 'meta'], 'readwrite');
     const cards = tx.objectStore('cards');
-    // As requisições são enfileiradas na transação; esperar só o `done`
-    // evita um ida-e-volta por card.
-    for (const card of upsert) void cards.put(card);
-    for (const id of remove) void cards.delete(id);
-    void tx.objectStore('meta').put(state, 'sync');
+    try {
+      // As requisições são enfileiradas na transação; esperar só o `done`
+      // evita um ida-e-volta por card. O erro chega pelo `tx.done`; o `catch`
+      // vazio só evita uma rejeição não tratada por requisição.
+      for (const card of upsert) cards.put(card).catch(ignore);
+      for (const id of remove) cards.delete(id).catch(ignore);
+      tx.objectStore('meta').put(state, 'sync').catch(ignore);
+    } catch (error) {
+      // Um `put` pode lançar na hora (card sem chave, por exemplo). Sem o abort,
+      // a transação gravaria as requisições já enfileiradas, sem o estado.
+      tx.abort();
+      tx.done.catch(ignore);
+      throw error;
+    }
     await tx.done;
   }
 

@@ -89,4 +89,13 @@ describe('IndexedDB store', () => {
     expect(cacheName('302573874', PIPE)).toBe(`pipefy-dashboard:302573874:${PIPE}`);
     expect(cacheName('dev-user', PIPE)).toBe(`pipefy-dashboard:dev-user:${PIPE}`);
   });
+
+  it('não grava nada se uma gravação do commit falhar na hora', async () => {
+    const store = await open('u1');
+    await store.commit({ upsert: [card('1')], state: state('50') });
+    const broken = { ...card('3'), id: undefined } as unknown as CardRecord;
+    await expect(store.commit({ upsert: [card('2'), broken], state: state('100') })).rejects.toThrow();
+    expect(await store.ids()).toEqual(['1']);
+    expect(await store.loadState()).toMatchObject({ cursor: '50' });
+  });
 });
