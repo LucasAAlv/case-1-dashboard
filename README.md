@@ -5,6 +5,7 @@ App que roda dentro da Pipefy, como uma visão do pipe, e permite montar gráfic
 - Arquitetura, custo em chamadas, limitações e boas práticas: [docs/arquitetura.md](docs/arquitetura.md)
 - Decisões, com alternativas e motivos: [docs/decisoes.md](docs/decisoes.md)
 - Leitura da documentação do SDK de Apps: [docs/pesquisa-sdk-apps.md](docs/pesquisa-sdk-apps.md)
+- Débito técnico e o que eu faria com mais tempo: [docs/debito-tecnico.md](docs/debito-tecnico.md)
 
 **Stack:** TypeScript, Vite, Vitest, Chart.js e IndexedDB (via `idb`). Não há backend: as chamadas à API passam pelo SDK de Apps, com as permissões do usuário logado.
 
