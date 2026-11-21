@@ -204,6 +204,25 @@ Também ficou confirmado na prática:
 
 ---
 
+## Testes
+
+Os testes ficam em duas pastas, e cada uma espelha a estrutura de `src/` (D11 em [decisoes.md](decisoes.md)). O CI roda os dois grupos em etapas separadas.
+
+| Grupo | Arquivos | O que exercita |
+| --- | --- | --- |
+| **Unitários** (`test/unit`) | `domain/normalize`, `domain/card-parser`, `sync/watermark`, `analytics/aggregate` | Funções puras: conversão de número e data, sufixo da empresa, campos fora de ordem ou vazios, marca d'água, agregação com "Outros" e situação de vencimento |
+| | `sync/graphql-client`, `sync/pipefy-api`, `charts/chart-spec` | Uma unidade com o SDK simulado (`vi.fn`): formatos de `errors`, retry e backoff, texto e escape da query, validação do `pipeId`, visões salvas e fila de gravação |
+| **Integração** (`test/integration`) | `sync/sync-engine` | O motor de sync real, com o parser e a marca d'água reais, sobre um pipe falso (paginação por cursor e filtro por `updated_at`) e um cache em memória: carga retomável, incremental, reconciliação, troca de usuário e página sem cursor |
+| | `cache/idb-store` | A biblioteca `idb` real sobre o `fake-indexeddb`: upsert por id, cards e estado na mesma transação, um banco por usuário e limpeza com outra aba aberta |
+
+**O que não tem teste automatizado:**
+
+- A tela e a orquestração (`src/app`, `src/ui`, `src/charts/render-chart.ts`): mutex do sync, sync pedido durante outro, troca de sessão na tela e listeners do `pipe-view`.
+- Ponta a ponta no navegador.
+- O comportamento real da API e do iframe da Pipefy. O SDK só funciona dentro do iframe, com o `appID` que a Pipefy coloca na URL, então isso foi validado à mão dentro do pipe e medido (ver "Medido dentro da Pipefy").
+
+---
+
 ## Boas práticas aplicadas
 
 - **Testes primeiro nos pontos críticos:** parser com ordem variável de campos e campos vazios, marca d'água, retomada da carga, reconciliação, isolamento do cache e validação das visões salvas. O CI roda typecheck, testes e build.

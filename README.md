@@ -31,9 +31,23 @@ Abra `http://localhost:5173/pipe-view.html`. Fora da Pipefy não existe `appID` 
 
 ## Testes e build
 
+Todos os testes:
+
 ```bash
 npm test
 ```
+
+Só os unitários (`test/unit`) ou só os de integração (`test/integration`):
+
+```bash
+npm run test:unit
+```
+
+```bash
+npm run test:integration
+```
+
+O que cada grupo cobre está em [docs/arquitetura.md](docs/arquitetura.md#testes).
 
 ```bash
 npm run typecheck

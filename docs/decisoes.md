@@ -130,3 +130,19 @@ Uma revisão no nível *high* encontrou 14 pontos. Foram corrigidos, com teste q
 **Alternativa:** seguir o `prefers-color-scheme` em qualquer lugar, como na primeira versão.
 
 **Motivo:** a validação no pipe mostrou o problema. Num sistema em modo escuro, o dashboard ficava escuro dentro da tela clara da Pipefy. O tema do iframe segue o sistema operacional, não a Pipefy, e a documentação do SDK não mostra um jeito de saber o tema da Pipefy. O tema escuro continua nos tokens, validado, e volta a valer se essa informação aparecer.
+
+---
+
+## D11. Testes separados em unitários e de integração (21/11/2026)
+
+**Escolha:** os testes ficam em `test/unit` e `test/integration`, e cada pasta espelha a estrutura de `src/`. Os scripts `test:unit` e `test:integration` rodam cada grupo, e o CI roda os dois em etapas separadas. O `npm test` continua rodando tudo.
+
+**Critério:**
+- **Unitário:** uma unidade isolada. Função pura, ou um módulo com o SDK simulado por `vi.fn`.
+- **Integração:** mais de um módulo real trabalhando junto (motor de sync, parser e marca d'água), ou a biblioteca de armazenamento real (`idb` sobre o `fake-indexeddb`).
+
+**Alternativas:**
+- Manter uma pasta por módulo e só documentar a classificação: custo zero, mas a separação não aparece na estrutura nem no CI.
+- Separar por sufixo (`*.int.test.ts`) sem mover arquivos: menos mudança, mas a separação fica menos visível.
+
+**Motivo:** a separação fica explícita na estrutura e no CI. Uma falha mostra de cara se quebrou uma regra isolada ou a combinação dos módulos. Com 76 testes em menos de 1 s, não há ganho de tempo; o ganho é de clareza.
