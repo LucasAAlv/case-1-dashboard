@@ -49,7 +49,7 @@ Tudo aqui vem da documentação, **não foi testado na prática**. Quando a docu
 - Existe `p.getAuthToken()`, na página *User interface functions*, seção "Authentication". Ele devolve uma promise com "an authentication token for the current user, which you can forward to your own backend to identify who is using the app".
 - **Não documentado:** o tipo do token (token de API, OAuth, JWT), a validade, como o backend verifica o token e se ele serve para chamar `api.pipefy.com`.
 - Ao contrário de `p.query`, o `getAuthToken()` rejeita a promise quando falha.
-- Para chamadas feitas por um backend, a documentação manda usar um **token de Service Account** ("Personal Access Tokens are deprecated"). Esse token é compartilhado, o que **viola a decisão 5 do `CLAUDE.md`**: nada de token de admin compartilhado.
+- Para chamadas feitas por um backend, a documentação manda usar um **token de Service Account** ("Personal Access Tokens are deprecated"). Esse token é o mesmo para todos os usuários e lê tudo o que a conta de serviço enxerga, o que **contraria o requisito do case**: um usuário não pode ver dados que vieram com as permissões de outro.
 - Conclusão: um backend só se sustenta se o `getAuthToken()` servir para chamar a API **como o usuário**. Isso precisa ser testado.
 
 ---
@@ -63,7 +63,7 @@ Tudo aqui vem da documentação, **não foi testado na prática**. Quando a docu
   - se houver CSP, o `frame-ancestors` precisa incluir `https://app.pipefy.com`;
   - o FAQ pede que o servidor aceite CORS de `https://app.pipefy.com`. Isso contradiz o "no CORS to configure" da página de chamadas à API; na dúvida, siga o FAQ.
 - **SDK:** carregado por `<script src="https://platform.staticpipefy.com/pipefy-app.js"></script>` e lido em `window.PipefyApp`. **Não está no npm.**
-- **`appID`:** a Pipefy acrescenta `?appID=...` à URL do iframe. Abrir o app direto no navegador dá o erro `PipefyApp: no "appID" query parameter found on this page...`. Para desenvolver fora da Pipefy, vamos precisar de um **mock do SDK**.
+- **`appID`:** a Pipefy acrescenta `?appID=...` à URL do iframe. Abrir o app direto no navegador dá o erro `PipefyApp: no "appID" query parameter found on this page...`. Desenvolver fora da Pipefy exige um **mock do SDK**.
 - **Registro:** um admin da org cadastra o app em https://app.pipefy.com/developers/apps, em "Add new app", com nome e URL do `manifest.json`.
   - Um **app privado** fica visível só na org e não passa por revisão. É o caso aqui.
   - O app aparece no menu Tools, no canto superior direito, e nas superfícies declaradas em `features`.
@@ -106,7 +106,7 @@ Tudo aqui vem da documentação, **não foi testado na prática**. Quando a docu
 - Use **`p.app.pipeId`** como id do pipe nas queries, e não `p.pipeId`. O `p.organizationId` pode ser usado direto.
 - `p.query` recusa mutations, e `p.mutation` recusa queries.
 - `p.card()`, `p.pipe()` e `p.fields()` resolvem `null` quando falham, então `null` é ambíguo. Não use esses métodos para detectar erro.
-- `p.pipe()` devolve `id`, `name`, `organization_name` e `cards_count`. O `cards_count` serve para a checagem de exclusões (decisão 3).
+- `p.pipe()` devolve `id`, `name`, `organization_name` e `cards_count`. Comparado com a contagem do cache, o `cards_count` pode servir para detectar exclusões.
 
 ---
 
@@ -122,9 +122,9 @@ Tudo aqui vem da documentação, **não foi testado na prática**. Quando a docu
 
 ---
 
-## 6. Implicação para a stack (ainda não decidida)
+## 6. Implicação para a stack
 
-A documentação favorece um **app só de front-end**:
+Na data desta pesquisa, a stack ainda não estava decidida. A documentação favorece um **app só de front-end**:
 
 - **sync** no navegador via `p.query`, com as permissões do próprio usuário;
 - **cache** no IndexedDB, com o `me.id` como chave;
@@ -141,16 +141,11 @@ A alternativa com backend só se sustenta se o `getAuthToken()` servir para cham
 
 ---
 
-## 7. Pendências (paramos aqui)
+## 7. O que ficou em aberto e como foi resolvido
 
-Perguntas feitas ao Lucas, ainda sem resposta:
-
-1. **O Lucas é admin da org 302573874?** Só um admin consegue registrar o app.
-2. **Fazer um teste rápido do `getAuthToken()`** com um app mínimo registrado: um manifest e uma página `pipe-view` que imprime o retorno. É esse teste que decide entre só front-end e front-end com backend.
-
-Com as respostas, o próximo passo é propor as opções de stack com os trade-offs e esperar a decisão do Lucas.
-
-Leituras que ainda faltam: `reference/service-accounts`, `reference/authentication` e a seção "Request Limits" da Central de Ajuda.
+- **Registro do app:** exige um admin da org. O app foi registrado na org do case como "Dashboard de Cards".
+- **`getAuthToken()`:** não foi testado. Como o `p.query` já roda com as permissões de quem está logado, a escolha foi o app só de front-end, e o backend com `getAuthToken()` ficou como evolução (decisão D1 em `docs/decisoes.md`).
+- **Leituras não feitas nesta pesquisa:** `reference/service-accounts`, `reference/authentication` e a seção "Request Limits" da Central de Ajuda.
 
 ---
 
