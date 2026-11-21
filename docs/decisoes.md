@@ -12,7 +12,7 @@ Registro das decisões do Case 1, com data, opção escolhida, alternativas e mo
 - Backend com token de Service Account: um token compartilhado lê tudo o que a conta de serviço enxerga, e o isolamento por permissão teria de ser reimplementado à mão. Isso viola a regra de que cada usuário só vê o que as próprias permissões deixam.
 - Backend com o token de `p.getAuthToken()`: a documentação não diz o formato, a validade nem se o token serve para chamar a API como o usuário. Fica como evolução, depois de testado.
 
-**Motivo:** o `p.query` executa "with the full permissions and access rights of whoever is using your app". Com isso, o isolamento de permissões vem da própria Pipefy, e não de código nosso. Também não há segredo para guardar nem servidor para manter.
+**Motivo:** o `p.query` executa "with the full permissions and access rights of whoever is using your app". Com isso, o isolamento de permissões vem da própria Pipefy, e não do código do app. Também não há segredo para guardar nem servidor para manter.
 
 ---
 
