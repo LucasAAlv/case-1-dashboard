@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { SyncEngine } from '../../src/sync/sync-engine';
+import { SyncEngine } from '../../../src/sync/sync-engine';
 import { FakePipe, MemoryStore, rawCard } from '../helpers/fake-pipe';
 
 const range = (n: number, from = 1) => Array.from({ length: n }, (_, i) => rawCard(from + i));

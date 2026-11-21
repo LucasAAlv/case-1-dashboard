@@ -3,8 +3,8 @@ import {
   GraphQLRequestError,
   createSdkClient,
   withRetry,
-} from '../../src/sync/graphql-client';
-import type { PipefyClient, PipefyQueryResult } from '../../src/pipefy/sdk';
+} from '../../../src/sync/graphql-client';
+import type { PipefyClient, PipefyQueryResult } from '../../../src/pipefy/sdk';
 
 function sdkReturning(...results: PipefyQueryResult<unknown>[]): PipefyClient {
   const query = vi.fn();

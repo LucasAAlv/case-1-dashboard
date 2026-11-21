@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { aggregate, dueStatus } from '../../src/analytics/aggregate';
-import type { CardRecord } from '../../src/domain/card';
+import { aggregate, dueStatus } from '../../../src/analytics/aggregate';
+import type { CardRecord } from '../../../src/domain/card';
 
 function card(partial: Partial<CardRecord>): CardRecord {
   return {

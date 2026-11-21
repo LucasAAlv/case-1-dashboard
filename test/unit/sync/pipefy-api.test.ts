@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createPipefyApi } from '../../src/sync/pipefy-api';
-import type { GraphQLClient } from '../../src/sync/graphql-client';
+import { createPipefyApi } from '../../../src/sync/pipefy-api';
+import type { GraphQLClient } from '../../../src/sync/graphql-client';
 
 function clientReturning(data: unknown) {
   const request = vi.fn().mockResolvedValue(data);

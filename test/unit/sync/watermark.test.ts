@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { incrementalSince, nextWatermark, toUtcSeconds } from '../../src/sync/watermark';
+import { incrementalSince, nextWatermark, toUtcSeconds } from '../../../src/sync/watermark';
 
 describe('incrementalSince', () => {
   it('recua a marca d’água pela margem, em UTC', () => {

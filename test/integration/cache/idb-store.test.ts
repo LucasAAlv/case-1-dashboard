@@ -1,8 +1,8 @@
 import 'fake-indexeddb/auto';
 import { afterEach, describe, expect, it } from 'vitest';
-import { deleteCardStore, openCardStore } from '../../src/cache/idb-store';
-import type { SyncState } from '../../src/cache/card-store';
-import type { CardRecord } from '../../src/domain/card';
+import { deleteCardStore, openCardStore } from '../../../src/cache/idb-store';
+import type { SyncState } from '../../../src/cache/card-store';
+import type { CardRecord } from '../../../src/domain/card';
 
 const PIPE = '307434671';
 
