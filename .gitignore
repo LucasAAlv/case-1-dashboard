@@ -11,3 +11,6 @@ node_modules/
 dist/
 coverage/
 *.log
+
+# Ferramentas locais
+.claude/

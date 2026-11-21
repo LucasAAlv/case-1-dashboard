@@ -52,7 +52,7 @@ const EMPTY_STATE: SyncState = {
  * 1. Lê o `cards_count` do pipe (1 chamada).
  * 2. Sem cache pronto: carga inicial paginada, gravando o cursor a cada página.
  *    Com cache pronto: incremental por `updated_at`, com upsert por id.
- * 3. Se o `cards_count` divergir do cache, reconcilia os ids para achar exclusões.
+ * 3. Se o `cards_count` divergir do cache, reconcilia: exclusões e cards faltando.
  */
 export class SyncEngine {
   private readonly now: () => Date;
@@ -91,7 +91,9 @@ export class SyncEngine {
     let reconciled = false;
     const cachedCount = await this.store.count();
     if (cachedCount !== pipeCount && pipeCount !== state.reconciledPipeCount) {
-      ({ state, deleted } = await this.reconcile(state, pipeCount));
+      let restored: number;
+      ({ state, deleted, upserted: restored } = await this.reconcile(state, pipeCount));
+      upserted += restored;
       reconciled = true;
     }
 
@@ -152,25 +154,35 @@ export class SyncEngine {
   }
 
   /**
-   * Exclusões não aparecem no filtro por `updated_at`. Pagina só os ids do pipe
-   * e remove do cache o que sumiu. Custa o mesmo número de páginas de uma carga
-   * completa, por isso só roda quando o `cards_count` muda.
+   * Reconciliação: pagina o pipe inteiro de novo, faz upsert de tudo e remove do
+   * cache o que não veio. Resolve dois casos que o filtro por `updated_at` não
+   * vê: exclusões e cards que faltam no cache com `updated_at` antigo (por
+   * exemplo, quando o usuário passa a enxergar um card que já existia).
+   *
+   * Baixar os cards completos custa as mesmas ~400 chamadas que baixar só os
+   * ids (o `allCards` devolve 50 por página de qualquer jeito). Por isso só
+   * roda quando o `cards_count` muda.
    */
   private async reconcile(state: SyncState, pipeCount: number) {
-    const remote = new Set<string>();
+    const seen = new Set<string>();
     let after: string | null = null;
+    let upserted = 0;
     for (let hasNext = true; hasNext; ) {
-      const page = await this.call(() => this.api.cardIdsPage(after));
-      for (const id of page.items) remote.add(id);
-      this.onProgress?.({ phase: 'reconcile', loaded: remote.size, total: pipeCount });
+      const page = await this.call(() => this.api.cardsPage({ after, updatedSince: null }));
+      // Ids de cards inválidos também contam como "existem no pipe".
+      for (const raw of page.items) seen.add(String(raw.id));
+      const cards = this.parseAll(page.items);
+      if (cards.length > 0) await this.store.commit({ upsert: cards, state });
+      upserted += cards.length;
+      this.onProgress?.({ phase: 'reconcile', loaded: seen.size, total: pipeCount });
       after = page.endCursor;
       hasNext = page.hasNextPage && after !== null;
     }
 
-    const remove = (await this.store.ids()).filter((id) => !remote.has(id));
+    const remove = (await this.store.ids()).filter((id) => !seen.has(id));
     const next: SyncState = { ...state, reconciledPipeCount: pipeCount };
     await this.store.commit({ remove, state: next });
-    return { state: next, deleted: remove.length };
+    return { state: next, deleted: remove.length, upserted };
   }
 
   private parseAll(items: readonly RawCard[]): CardRecord[] {

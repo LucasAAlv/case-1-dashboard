@@ -18,10 +18,16 @@ export interface PipefyGraphQLError {
   extensions?: { code?: string; correlation_id?: string };
 }
 
+export type StorageScope = 'organization' | 'pipe' | 'card';
+export type StorageVisibility = 'private' | 'public';
+
 export interface PipefyClient {
   app: { pipeId: string | number };
   organizationId?: string | number;
   query<T>(query: string, variables?: Record<string, unknown>): Promise<PipefyQueryResult<T>>;
+  /** Armazenamento do SDK. `private` = só o usuário atual. Valores são strings. */
+  get(scope: StorageScope, visibility: StorageVisibility, key: string): Promise<unknown>;
+  set(scope: StorageScope, visibility: StorageVisibility, key: string, value: string): Promise<unknown>;
 }
 
 export interface PipeViewDescriptor {

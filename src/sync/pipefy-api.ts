@@ -10,12 +10,10 @@ export interface CardsPage<T> {
   endCursor: string | null;
 }
 
-/** As três leituras de que o sync precisa. Isola o GraphQL do motor de sync. */
+/** As leituras de que o sync precisa. Isola o GraphQL do motor de sync. */
 export interface PipefyApi {
   /** Página de cards, opcionalmente só os alterados desde `updatedSince` (UTC). */
   cardsPage(args: { after: string | null; updatedSince: string | null }): Promise<CardsPage<RawCard>>;
-  /** Página só com ids, para reconciliar exclusões. */
-  cardIdsPage(after: string | null): Promise<CardsPage<string>>;
   cardsCount(): Promise<number>;
 }
 
@@ -34,18 +32,18 @@ const str = (value: string) => JSON.stringify(value);
  * do `filter` no schema não foi verificado. O formato abaixo foi testado no
  * GraphiQL. Todo valor dinâmico passa por `str` ou pela validação do pipeId.
  */
-function allCardsQuery(pipeId: string, node: string, after: string | null, updatedSince: string | null) {
+function allCardsQuery(pipeId: string, after: string | null, updatedSince: string | null) {
   const args = [`pipeId: ${pipeId}`, `first: ${PAGE_SIZE}`];
   if (after !== null) args.push(`after: ${str(after)}`);
   if (updatedSince !== null) {
     args.push(`filter: { field: "updated_at", operator: gte, value: ${str(updatedSince)} }`);
   }
-  return `{ allCards(${args.join(', ')}) { pageInfo { hasNextPage endCursor } edges { node { ${node} } } } }`;
+  return `{ allCards(${args.join(', ')}) { pageInfo { hasNextPage endCursor } edges { node { id updated_at fields { field { id } value } } } } }`;
 }
 
-function toPage<N, T>(response: AllCardsResponse<N>, map: (node: N) => T): CardsPage<T> {
+function toPage<N>(response: AllCardsResponse<N>): CardsPage<N> {
   const { pageInfo, edges } = response.allCards;
-  return { items: edges.map((e) => map(e.node)), hasNextPage: pageInfo.hasNextPage, endCursor: pageInfo.endCursor };
+  return { items: edges.map((e) => e.node), hasNextPage: pageInfo.hasNextPage, endCursor: pageInfo.endCursor };
 }
 
 export function createPipefyApi(client: GraphQLClient, pipeId: string): PipefyApi {
@@ -53,13 +51,8 @@ export function createPipefyApi(client: GraphQLClient, pipeId: string): PipefyAp
 
   return {
     async cardsPage({ after, updatedSince }) {
-      const query = allCardsQuery(pipeId, 'id updated_at fields { field { id } value }', after, updatedSince);
-      return toPage(await client.request<AllCardsResponse<RawCard>>(query), (node) => node);
-    },
-
-    async cardIdsPage(after) {
-      const query = allCardsQuery(pipeId, 'id', after, null);
-      return toPage(await client.request<AllCardsResponse<{ id: string }>>(query), (node) => node.id);
+      const query = allCardsQuery(pipeId, after, updatedSince);
+      return toPage(await client.request<AllCardsResponse<RawCard>>(query));
     },
 
     async cardsCount() {
