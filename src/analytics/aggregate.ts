@@ -86,13 +86,13 @@ function merge(into: Accumulator, from: Accumulator) {
   into.max = Math.max(into.max, from.max);
 }
 
-/** Valor final do grupo; null quando não há base (média de grupo sem valores). */
+/** Valor final do grupo; null quando não há base (grupo sem nenhum valor numérico). */
 function finalize(acc: Accumulator, aggregation: Aggregation): number | null {
   switch (aggregation) {
     case 'count':
       return acc.count;
     case 'sum':
-      return acc.sum;
+      return acc.n ? acc.sum : null;
     case 'avg':
       return acc.n ? acc.sum / acc.n : null;
     case 'min':

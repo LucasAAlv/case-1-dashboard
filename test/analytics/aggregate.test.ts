@@ -53,11 +53,13 @@ describe('aggregate', () => {
     });
   });
 
-  it('omite o grupo sem nenhum valor numérico em média, mínimo e máximo', () => {
+  it('omite o grupo sem nenhum valor numérico em soma, média, mínimo e máximo', () => {
     const only = [card({ state: 'RS', totalValue: null })];
-    expect(aggregate(only, { dimension: 'state', aggregation: 'avg' }, { today: TODAY })).toEqual([]);
-    expect(aggregate(only, { dimension: 'state', aggregation: 'sum' }, { today: TODAY })).toEqual([
-      { label: 'RS', value: 0 },
+    for (const aggregation of ['sum', 'avg', 'min', 'max'] as const) {
+      expect(aggregate(only, { dimension: 'state', aggregation }, { today: TODAY })).toEqual([]);
+    }
+    expect(aggregate(only, { dimension: 'state', aggregation: 'count' }, { today: TODAY })).toEqual([
+      { label: 'RS', value: 1 },
     ]);
   });
 
