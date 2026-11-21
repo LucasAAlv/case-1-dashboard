@@ -142,10 +142,10 @@ Regras de código que já valem no projeto:
 
 ## Como trabalhar aqui
 
-- **O Lucas decide e o agente executa.** Mudança de arquitetura, biblioteca nova, mudança no modelo de dados ou no schema do cache: proponha as opções com os trade-offs e espere a decisão. Na dúvida, pergunte antes de assumir.
+- **Decisão de desenho vem antes do código.** Mudança de arquitetura, biblioteca nova, mudança no modelo de dados ou no schema do cache: proponha as opções com os trade-offs e espere a decisão. Na dúvida, pergunte antes de assumir.
 - Escopo exato do pedido: não refatore código adjacente e não acrescente comentário em código que não foi tocado. Dependência nova só com necessidade real, e com decisão.
-- **Não invente API.** O que não estiver testado em `docs/` ou no código sobre o SDK de Apps ou a API GraphQL deve ser conferido em https://developers.pipefy.com e https://api-docs.pipefy.com, ou testado pelo Lucas no GraphiQL.
-- **Os dados da org não são nossos.** Nada de mutation em cards, pipes ou databases sem pedido explícito. Toda alteração de teste é revertida.
+- **Não invente API.** O que não estiver testado em `docs/` ou no código sobre o SDK de Apps ou a API GraphQL deve ser conferido em https://developers.pipefy.com e https://api-docs.pipefy.com, ou testado no GraphiQL.
+- **Os dados da org pertencem à banca.** Nada de mutation em cards, pipes ou databases sem pedido explícito. Toda alteração de teste é revertida.
 - **Segredos nunca entram no repositório**, que é público. O app não usa token. Se um dia precisar, vai para `.env` (já no `.gitignore`), com um `.env.example` sem valores.
 - Decisão relevante entra em `docs/decisoes.md` (próximo `D<n>`, com data, escolha, alternativas e motivo). Limitação ou débito novo entra em `docs/arquitetura.md` ou `docs/debito-tecnico.md`. O README e a pasta `docs/` são atualizados junto com o código.
 - Respostas sem preâmbulo e sem resumo final. Texto só para decisões que não são óbvias.
