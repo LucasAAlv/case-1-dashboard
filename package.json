@@ -22,14 +22,14 @@
   },
   "homepage": "https://github.com/LucasAAlv/case-1-dashboard#readme",
   "dependencies": {
-    "chart.js": "^4.6.1",
-    "idb": "^8.0.4"
+    "chart.js": "4.6.1",
+    "idb": "8.0.4"
   },
   "devDependencies": {
-    "@types/node": "^26.6.6",
-    "fake-indexeddb": "^6.2.8",
-    "typescript": "^7.0.2",
-    "vite": "^8.3.8",
-    "vitest": "^5.1.1"
+    "@types/node": "22.20.5",
+    "fake-indexeddb": "6.2.8",
+    "typescript": "7.0.2",
+    "vite": "8.3.8",
+    "vitest": "5.1.1"
   }
 }
