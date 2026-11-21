@@ -38,11 +38,7 @@ npm run test:integration  # só test/integration
 npm run build             # gera dist/ (manifest, init e pipe-view)
 ```
 
-Fora da Pipefy não há `appID` na URL, e o app usa o SDK falso ([src/pipefy/mock-sdk.ts](src/pipefy/mock-sdk.ts)) com dados sintéticos:
-
-- parâmetros na URL: `?mockCards=20000&mockLatency=100&mockUser=outro-usuario`;
-- no console: `__mockUpdateCard('<id>')` e `__mockDeleteCard('<id>')`, e depois "Sincronizar agora";
-- o erro `Cannot read properties of null` do SDK real no console é esperado fora do iframe.
+Fora da Pipefy não há `appID` na URL, e o app usa o SDK falso ([src/pipefy/mock-sdk.ts](src/pipefy/mock-sdk.ts)) com dados sintéticos. Os parâmetros, os atalhos no console e o erro esperado estão no [README](README.md#rodar-localmente-sem-a-pipefy).
 
 Antes de dar uma tarefa por concluída, rode `npm run typecheck`, `npm test` e `npm run build`.
 
@@ -50,6 +46,7 @@ Antes de dar uma tarefa por concluída, rode `npm run typecheck`, `npm test` e `
 
 | Pasta | Responsabilidade | Arquivo de referência |
 | --- | --- | --- |
+| `src` (raiz) | Pontos de entrada: `init.ts` registra a feature `pipe-view`; `pipe-view.ts` escolhe entre o SDK real e o falso, avisa quando a página abre fora da Pipefy e fixa o tema claro (D10) | `init.ts`, `pipe-view.ts` |
 | `src/domain` | Card normalizado, parser e conversões | `normalize.ts`, `card-parser.ts` |
 | `src/sync` | Cliente GraphQL sobre o `p.query`, queries do `allCards`, marca d'água e motor de sync | `pipefy-api.ts`, `sync-engine.ts` |
 | `src/cache` | Contrato do cache (`CardStore`) e implementação em IndexedDB | `card-store.ts`, `idb-store.ts` |
