@@ -1,0 +1,97 @@
+# Decisões
+
+Registro das decisões do Case 1, com data, opção escolhida, alternativas e motivo.
+
+---
+
+## D1. App só de front-end, rodando no `pipe-view` (19/11/2026)
+
+**Escolha:** o app inteiro roda no navegador, dentro do iframe do `pipe-view`. O sync chama a API pelo `p.query` do SDK, o cache fica no IndexedDB e a agregação é local. Não há backend.
+
+**Alternativas:**
+- Backend com token de Service Account: um token compartilhado lê tudo o que a conta de serviço enxerga, e o isolamento por permissão teria de ser reimplementado à mão. Isso viola a regra de que cada usuário só vê o que as próprias permissões deixam.
+- Backend com o token de `p.getAuthToken()`: a documentação não diz o formato, a validade nem se o token serve para chamar a API como o usuário. Fica como evolução, depois de testado.
+
+**Motivo:** o `p.query` executa "with the full permissions and access rights of whoever is using your app". Com isso, o isolamento de permissões vem da própria Pipefy, e não de código nosso. Também não há segredo para guardar nem servidor para manter.
+
+---
+
+## D2. Stack: TypeScript, Vite, Vitest e Chart.js (19/11/2026)
+
+**Escolha:** TypeScript estrito sem framework de UI, Vite para o build com várias páginas, Vitest para os testes e Chart.js para os gráficos. A dependência `idb` faz um wrapper fino sobre o IndexedDB.
+
+**Alternativas:**
+- React ou Vue: a UI é um formulário e uma grade de gráficos, e um framework acrescentaria peso e conceitos sem ganho real.
+- ECharts: mais recursos, mas o bundle é maior. O Chart.js cobre barra, linha, pizza e rosca, que é o que o construtor oferece.
+- SQL no navegador (sql.js ou DuckDB-wasm): a agregação de 20 mil linhas em TypeScript leva milissegundos, e o WASM acrescentaria megabytes.
+
+**Motivo:** a vaga pede TypeScript, e o conjunto é pequeno, testável e fácil de explicar.
+
+---
+
+## D3. Um banco IndexedDB por usuário e pipe (19/11/2026)
+
+**Escolha:** o nome do banco é `pipefy-dashboard:<me.id>:<pipeId>`. O app só abre o banco do `me.id` devolvido pela Pipefy.
+
+**Alternativas:** um banco único com a coluna `userId`. Funciona, mas o isolamento passaria a depender de cada query lembrar de filtrar.
+
+**Motivo:** o isolamento fica estrutural. Apagar o cache de um usuário é um `deleteDB`.
+
+**Limitação:** dois usuários no mesmo perfil de navegador dividem o disco. A separação é do app, não do sistema operacional.
+
+---
+
+## D4. Marca d'água = início do último sync completo (19/11/2026, ajusta a decisão 2 do case)
+
+**Escolha:** depois de um sync completo, a marca d'água passa a ser o instante em que ele começou. O próximo incremental filtra `updated_at gte <marca - 5 min>` e faz upsert por id.
+
+**Alternativa original:** a marca seria o último `updated_at` visto, menos alguns segundos.
+
+**Motivo:** os testes mostraram um problema com a base real. Os 20 mil cards têm `updated_at` dentro do mesmo minuto (12/11/2026, entre 18h56 e 18h57 UTC). Com a marca no último `updated_at` visto, ela ficaria parada nesse minuto, e todo incremental baixaria de novo os cards dentro da margem até que alguém editasse um card. Com o início do sync, a marca sempre avança.
+
+**Por que é seguro:** tudo o que mudou antes do início do sync já estava visível quando o pipe foi paginado. O que mudou durante ou depois do sync tem `updated_at` posterior e entra no próximo incremental. A margem de 5 min cobre a diferença de relógio entre o navegador e a Pipefy e as gravações que ficam visíveis com atraso.
+
+**Detalhes:**
+- Na carga inicial retomada, vale o início da **primeira** tentativa.
+- Se o incremental cair no meio, a marca não avança.
+- A marca nunca anda para trás.
+
+**Limitação:** depende de o relógio do navegador estar a menos de 5 min do relógio da Pipefy, o que vale para máquinas com NTP. Um relógio adiantado além da margem pode perder alterações.
+
+---
+
+## D5. Reconciliação de exclusões pelo `cards_count` (19/11/2026)
+
+**Escolha:** a cada sync, o app compara o `cards_count` do pipe com a contagem do cache. Se forem diferentes, pagina só os ids do pipe e remove do cache o que sumiu. O `cards_count` usado fica salvo, e a reconciliação só roda de novo quando ele mudar.
+
+**Motivo:** exclusões não aparecem no filtro por `updated_at`.
+
+**Ponto a observar:** um usuário que não enxerga todos os cards teria sempre contagens diferentes. Guardar o `cards_count` da última reconciliação evita refazer ~400 chamadas a cada abertura nesse caso.
+
+**Custo:** a reconciliação custa o mesmo número de páginas de uma carga completa, já que o `allCards` não tem outro jeito de listar ids.
+
+**Limitação:** uma criação somada a uma exclusão no mesmo intervalo mantém a contagem igual e esconde a exclusão. O listener `onCardDeleted` do `pipe-view` cobre as exclusões feitas com o app aberto.
+
+---
+
+## D6. Queries com literais escapados em vez de variáveis (19/11/2026)
+
+**Escolha:** o `pipeId`, o cursor e a data entram na query como literais. O `pipeId` é validado como numérico, e as strings passam por `JSON.stringify`.
+
+**Motivo:** o nome do tipo do argumento `filter` do `allCards` no schema não foi verificado. O formato literal foi testado no GraphiQL. Não usar o tipo evita inventar API.
+
+---
+
+## D7. Retry só para erros retentáveis (19/11/2026)
+
+**Escolha:** backoff exponencial para falha de transporte, `USAGE_LIMIT_EXCEEDED`, `TIMEOUT` e `INTERNAL_SERVER_ERROR`. Erro de permissão ou de sintaxe falha na hora.
+
+**Motivo:** o `p.query` nunca rejeita a promise. O erro vem em `errors`, como array ou como um único `Error`, e pode vir com HTTP 200. Uma resposta parcial (`data` junto com `errors`) também conta como erro, porque o sync precisa de páginas completas.
+
+---
+
+## D8. Situação de vencimento calculada na hora do gráfico (19/11/2026)
+
+**Escolha:** a dimensão "situação de vencimento" (vencido, vence em até 7 dias, a vencer) é a única calculada na renderização. As demais dimensões derivadas são calculadas uma vez, no sync.
+
+**Motivo:** ela depende do dia de hoje, então gravá-la no cache a deixaria desatualizada no dia seguinte.
