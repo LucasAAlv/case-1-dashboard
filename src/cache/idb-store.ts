@@ -18,7 +18,10 @@ const VERSION = 1;
  * dispositivo; a separação é do app, não do sistema operacional.
  */
 export function cacheName(userId: string, pipeId: string): string {
-  if (!userId.trim() || !pipeId.trim()) throw new Error('userId e pipeId são obrigatórios');
+  // O `:` separa as partes do nome. Sem ele nos ids, dois pares diferentes
+  // nunca geram o mesmo banco (D3). O pipeId segue a validação da API (D6).
+  if (!/^[\w-]+$/.test(userId)) throw new Error(`userId inválido: ${userId}`);
+  if (!/^\d+$/.test(pipeId)) throw new Error(`pipeId inválido: ${pipeId}`);
   return `pipefy-dashboard:${userId}:${pipeId}`;
 }
 

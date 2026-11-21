@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 import { afterEach, describe, expect, it } from 'vitest';
-import { deleteCardStore, openCardStore } from '../../src/cache/idb-store';
+import { cacheName, deleteCardStore, openCardStore } from '../../src/cache/idb-store';
 import type { SyncState } from '../../src/cache/card-store';
 import type { CardRecord } from '../../src/domain/card';
 
@@ -80,5 +80,13 @@ describe('IndexedDB store', () => {
   it('recusa usuário ou pipe vazios', async () => {
     await expect(openCardStore('', PIPE)).rejects.toThrow();
     await expect(openCardStore('u1', '')).rejects.toThrow();
+  });
+
+  it('recusa ids com o separador do nome, para dois pares nunca darem o mesmo banco', () => {
+    expect(() => cacheName('1:2', '3')).toThrow();
+    expect(() => cacheName('1', '2:3')).toThrow();
+    expect(() => cacheName('u1', 'abc')).toThrow();
+    expect(cacheName('302573874', PIPE)).toBe(`pipefy-dashboard:302573874:${PIPE}`);
+    expect(cacheName('dev-user', PIPE)).toBe(`pipefy-dashboard:dev-user:${PIPE}`);
   });
 });
