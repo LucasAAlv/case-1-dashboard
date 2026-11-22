@@ -105,7 +105,7 @@ Registro das decisões do Case 1, com data, opção escolhida, alternativas e mo
 Uma revisão no nível *high* encontrou 14 pontos. Foram corrigidos, com teste quando cabia:
 
 - **Carga retomada não vale como reconciliação.** Um card excluído entre as tentativas, numa página já gravada, ficaria para sempre no cache.
-- **O sync confere o usuário da sessão.** O `me { id }` vai na mesma query do `cards_count`. Se a sessão da Pipefy mudar de usuário, o sync aborta antes de gravar, porque os dados de B não podem entrar no cache de A.
+- **O sync confere o usuário da sessão.** O `me { id }` vai na mesma query do `cards_count`. Se a sessão da Pipefy mudar de usuário entre um sync e outro, o sync seguinte aborta antes de gravar, porque os dados de B não podem entrar no cache de A. A conferência é feita no início de cada sync, e não a cada página: uma troca no meio de uma carga longa ficou registrada como limitação.
 - **A divergência de contagem é confirmada antes de reconciliar.** Um card criado entre a leitura do `cards_count` e o incremental dispararia ~400 chamadas sem necessidade; a confirmação custa 1.
 - **`hasNextPage` sem `endCursor` é tratado como erro, não como fim.** Tratar como fim marcaria uma carga incompleta como pronta e faria a reconciliação apagar os cards não vistos.
 - **Commit sem estado.** A exclusão por evento e as páginas do incremental não reescrevem o estado do sync.

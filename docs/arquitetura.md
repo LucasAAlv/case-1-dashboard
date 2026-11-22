@@ -120,7 +120,9 @@ sequenceDiagram
 
 ### Troca de sessão
 
-Todo sync relê o `me.id` na mesma chamada do `cards_count`, sem custo extra. Se alguém sair da conta e entrar com outro usuário em outra aba, o dashboard aberto para de sincronizar antes de gravar qualquer coisa no cache do usuário anterior e pede para recarregar a página.
+Todo sync relê o `me.id` na mesma chamada do `cards_count`, sem custo extra. Se alguém sair da conta e entrar com outro usuário em outra aba, o próximo sync do dashboard aberto para antes de gravar no cache do usuário anterior e pede para recarregar a página.
+
+A conferência acontece no início de cada sync, e não a cada página. Uma troca no meio de uma carga inicial ou de uma reconciliação, que levam cerca de 2 min, não é detectada por ela (veja as limitações).
 
 ---
 
@@ -156,6 +158,7 @@ Uma abertura comum custa **3 chamadas**, contra cerca de 400 se o app baixasse t
 - **Relógio do navegador:** a marca d'água usa o relógio local com margem de 5 min. Um relógio adiantado além disso pode perder alterações.
 - **Mudança de visibilidade:** se o usuário passar a enxergar cards antigos ou perder acesso a eles sem que o `cards_count` mude, o app não detecta. "Limpar cache local" força uma carga completa.
 - **Criação + exclusão no mesmo intervalo** mantém a contagem e esconde a exclusão até o próximo `cards_count` diferente. Com o app aberto, o evento `onCardDeleted` cobre esse caso.
+- **Troca de sessão durante uma carga longa:** o `me.id` é conferido no início de cada sync. Se a sessão mudar de usuário no meio de uma carga inicial ou de uma reconciliação, as páginas seguintes, já com as permissões do novo usuário, entram no cache do anterior. Conferir a cada página custaria uma chamada a mais por página. "Limpar cache local" refaz a carga.
 - **Mesmo navegador, vários usuários:** os bancos são separados por usuário, mas ficam no mesmo disco. O isolamento é do app, não do sistema operacional.
 - **Armazenamento do navegador:** o IndexedDB de um iframe de terceiro fica particionado pelo site de topo. O Safari pode apagar esses dados depois de alguns dias sem uso, e aí acontece uma nova carga completa.
 - **Cursor recusado:** se a API passar a recusar o cursor salvo de uma carga interrompida, a retomada falha sempre com o mesmo erro. "Limpar cache local" recomeça do zero.
