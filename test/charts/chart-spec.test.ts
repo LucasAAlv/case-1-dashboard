@@ -75,8 +75,34 @@ describe('createSdkChartRepository', () => {
     expect(set).toHaveBeenCalledWith('pipe', 'private', 'charts', JSON.stringify([valid]));
   });
 
-  it('começa vazio se o p.get falhar', async () => {
-    const client = { get: vi.fn().mockRejectedValue(new Error('x')) } as unknown as PipefyClient;
+  it('devolve lista vazia quando ainda não há nada salvo', async () => {
+    const { client } = sdk(null);
     expect(await createSdkChartRepository(client).load()).toEqual([]);
+  });
+
+  it('propaga a falha do p.get, para não sobrescrever visões que não foram lidas', async () => {
+    const client = { get: vi.fn().mockRejectedValue(new Error('rede')) } as unknown as PipefyClient;
+    await expect(createSdkChartRepository(client).load()).rejects.toThrow('rede');
+  });
+
+  it('grava em ordem: o último save sempre vence', async () => {
+    const order: string[] = [];
+    let release!: () => void;
+    const slow = new Promise<void>((r) => (release = r));
+    const set = vi
+      .fn()
+      .mockImplementationOnce(async (_s, _v, _k, value: string) => {
+        await slow;
+        order.push(value);
+      })
+      .mockImplementation(async (_s, _v, _k, value: string) => {
+        order.push(value);
+      });
+    const repo = createSdkChartRepository({ get: vi.fn(), set } as unknown as PipefyClient);
+    const first = repo.save([valid]);
+    const second = repo.save([]);
+    release();
+    await Promise.all([first, second]);
+    expect(order).toEqual([JSON.stringify([valid]), '[]']);
   });
 });

@@ -60,6 +60,14 @@ describe('IndexedDB store', () => {
     expect(await store.ids()).toEqual(['2']);
   });
 
+  it('commit sem estado não mexe no estado gravado', async () => {
+    const store = await open('u1');
+    await store.commit({ upsert: [card('1'), card('2')], state: state('100') });
+    await store.commit({ remove: ['1'] });
+    expect(await store.loadState()).toMatchObject({ cursor: '100' });
+    expect(await store.ids()).toEqual(['2']);
+  });
+
   it('persiste entre aberturas, para retomar a carga', async () => {
     const first = await open('u1');
     await first.commit({ upsert: [card('1')], state: state('50') });

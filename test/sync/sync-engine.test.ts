@@ -15,7 +15,7 @@ class Clock {
 }
 
 function engine(pipe: FakePipe, store: MemoryStore, clock: Clock) {
-  return new SyncEngine(pipe, store, { now: clock.now, marginSeconds: 60 });
+  return new SyncEngine(pipe, store, { now: clock.now, marginSeconds: 60, userId: 'u1' });
 }
 
 describe('SyncEngine: carga inicial', () => {
@@ -58,6 +58,30 @@ describe('SyncEngine: carga inicial', () => {
     // A marca vem do início da primeira tentativa: o que mudou entre as duas
     // tentativas, numa página já lida, volta no incremental.
     expect(store.state).toMatchObject({ phase: 'ready', watermark: '2026-11-19T12:00:00Z' });
+  });
+
+  it('na carga retomada, uma exclusão entre as tentativas é reconciliada', async () => {
+    pipe.failOnCall = 3;
+    await expect(engine(pipe, store, clock).sync()).rejects.toThrow();
+    // O card 1 já está no cache e é excluído antes da retomada.
+    pipe.cards = pipe.cards.filter((c) => c.id !== '1');
+    pipe.failOnCall = null;
+    const result = await engine(pipe, store, clock).sync();
+    expect(result).toMatchObject({ reconciled: true, deleted: 1 });
+    expect(store.cards.has('1')).toBe(false);
+  });
+
+  it('falha, em vez de encerrar, se a API disser que há mais páginas sem dar cursor', async () => {
+    pipe.dropCursor = true;
+    await expect(engine(pipe, store, clock).sync()).rejects.toThrow(/cursor/);
+    expect(store.state?.phase).not.toBe('ready');
+  });
+
+  it('aborta sem gravar nada se a sessão da Pipefy mudou de usuário', async () => {
+    pipe.userId = 'outro';
+    await expect(engine(pipe, store, clock).sync()).rejects.toThrow(/usuário/);
+    expect(await store.count()).toBe(0);
+    expect(store.state).toBeNull();
   });
 
   it('pula card inválido sem derrubar o sync', async () => {
@@ -123,6 +147,15 @@ describe('SyncEngine: incremental', () => {
     expect(await store.count()).toBe(121);
   });
 
+  it('não reconcilia por causa de um card criado entre o cards_count e o incremental', async () => {
+    pipe.beforeCardsPage = () => {
+      if (!pipe.cards.some((c) => c.id === '500')) pipe.cards.push(rawCard(500, '2026-11-19T12:09:00Z'));
+    };
+    const result = await engine(pipe, store, clock.at('2026-11-19T12:10:00Z')).sync();
+    // status + incremental + status de novo para confirmar a divergência
+    expect(result).toMatchObject({ reconciled: false, upserted: 1, calls: 3 });
+  });
+
   it('não avança a marca se o incremental cair no meio', async () => {
     for (let id = 1; id <= 60; id++) pipe.update(id, '2026-11-19T12:05:00Z', '5');
     pipe.failOnCall = 3; // cards_count, página 1, falha na página 2
@@ -148,7 +181,7 @@ describe('SyncEngine: exclusões', () => {
     pipe.cards = pipe.cards.filter((c) => c.id !== '42');
     const result = await engine(pipe, store, clock).sync();
     expect(result).toMatchObject({ reconciled: true, deleted: 1 });
-    // cards_count + incremental + 3 páginas da reconciliação
+    // status + incremental + 3 páginas da reconciliação
     expect(result.calls).toBe(5);
     expect(store.cards.has('42')).toBe(false);
     expect(store.state?.reconciledPipeCount).toBe(119);

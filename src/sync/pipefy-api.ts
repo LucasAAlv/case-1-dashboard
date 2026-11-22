@@ -10,11 +10,19 @@ export interface CardsPage<T> {
   endCursor: string | null;
 }
 
+export interface PipeStatus {
+  /** `me.id` da sessão atual da Pipefy. */
+  userId: string;
+  /** `cards_count` do pipe. */
+  cardsCount: number;
+}
+
 /** As leituras de que o sync precisa. Isola o GraphQL do motor de sync. */
 export interface PipefyApi {
   /** Página de cards, opcionalmente só os alterados desde `updatedSince` (UTC). */
   cardsPage(args: { after: string | null; updatedSince: string | null }): Promise<CardsPage<RawCard>>;
-  cardsCount(): Promise<number>;
+  /** Usuário da sessão e contagem do pipe, numa chamada só. */
+  status(): Promise<PipeStatus>;
 }
 
 interface AllCardsResponse<N> {
@@ -55,9 +63,13 @@ export function createPipefyApi(client: GraphQLClient, pipeId: string): PipefyAp
       return toPage(await client.request<AllCardsResponse<RawCard>>(query));
     },
 
-    async cardsCount() {
-      const data = await client.request<{ pipe: { cards_count: number } }>(`{ pipe(id: ${pipeId}) { cards_count } }`);
-      return data.pipe.cards_count;
+    async status() {
+      const data = await client.request<{ me: { id: string } | null; pipe: { cards_count: number } }>(
+        `{ me { id } pipe(id: ${pipeId}) { cards_count } }`,
+      );
+      // Sessão expirada devolve `me` nulo.
+      if (!data.me?.id) throw new Error('Não foi possível identificar o usuário logado. Recarregue a página');
+      return { userId: String(data.me.id), cardsCount: data.pipe.cards_count };
     },
   };
 }

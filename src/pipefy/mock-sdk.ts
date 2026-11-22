@@ -106,7 +106,9 @@ function createMock(params: URLSearchParams): PipefyAppGlobal {
     async query<T>(query: string): Promise<PipefyQueryResult<T>> {
       await sleep();
       if (query.includes('allCards(')) return { data: allCards(query) as T };
-      if (query.includes('cards_count')) return { data: { pipe: { cards_count: cards.length } } as T };
+      if (query.includes('cards_count')) {
+        return { data: { me: { id: userId }, pipe: { cards_count: cards.length } } as T };
+      }
       if (query.includes('me {')) return { data: { me: { id: userId } } as T };
       return { errors: [{ message: 'Query não suportada pelo mock' }] };
     },
