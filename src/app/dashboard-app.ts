@@ -85,7 +85,7 @@ export async function startDashboard(sdk: PipefyAppGlobal, p: PipefyClient, root
       // Sem conseguir ler, não deixa editar: salvar agora apagaria as visões que não vieram.
       console.error('[dashboard] falha ao ler visões', error);
       chartsEditable = false;
-      view.setStatus('Não foi possível carregar suas visões salvas. Recarregue a página.', 'error');
+      view.setStatus(CHARTS_UNAVAILABLE, 'error');
     }
     view.setChartsEditable(chartsEditable);
   }
@@ -151,7 +151,10 @@ export async function startDashboard(sdk: PipefyAppGlobal, p: PipefyClient, root
         cards = await current.store.all();
         redraw();
       }
-      view.setStatus(describe(result), 'info');
+      // O status do sync substitui qualquer aviso anterior: sem repetir aqui, o
+      // usuário não saberia por que a edição das visões está bloqueada.
+      if (chartsEditable) view.setStatus(describe(result), 'info');
+      else view.setStatus(`${describe(result)} · ${CHARTS_UNAVAILABLE}`, 'error');
     } catch (error) {
       if (error instanceof SessionChangedError) return halt(error.message);
       if (halted) return;
@@ -238,6 +241,8 @@ function describe(result: SyncResult): string {
   if (result.skipped) parts.push(count(result.skipped, 'ignorado', 'ignorados') + ' por dados inválidos');
   return `${parts.join(' · ')} · ${dateTime.format(new Date())}`;
 }
+
+const CHARTS_UNAVAILABLE = 'Não foi possível carregar suas visões salvas. Recarregue a página.';
 
 const count = (n: number, one: string, many: string) => `${integer.format(n)} ${n === 1 ? one : many}`;
 
