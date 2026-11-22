@@ -85,7 +85,7 @@ export async function startDashboard(sdk: PipefyAppGlobal, p: PipefyClient, root
       // Sem conseguir ler, não deixa editar: salvar agora apagaria as visões que não vieram.
       console.error('[dashboard] falha ao ler visões', error);
       chartsEditable = false;
-      view.setStatus('Não foi possível carregar suas visões salvas. Recarregue a página.', 'error');
+      view.setStatus(CHARTS_UNAVAILABLE, 'error');
     }
     view.setChartsEditable(chartsEditable);
   }
@@ -134,12 +134,15 @@ export async function startDashboard(sdk: PipefyAppGlobal, p: PipefyClient, root
       rerun = true;
       return running;
     }
-    return exclusive(async () => {
-      do {
-        rerun = false;
-        await runSync();
-      } while (rerun && !halted);
-    });
+    return exclusive(syncUntilIdle);
+  }
+
+  /** Repete o sync enquanto chegarem pedidos durante a execução. */
+  async function syncUntilIdle() {
+    do {
+      rerun = false;
+      await runSync();
+    } while (rerun && !halted);
   }
 
   async function runSync() {
@@ -154,7 +157,10 @@ export async function startDashboard(sdk: PipefyAppGlobal, p: PipefyClient, root
         cards = await current.store.all();
         redraw();
       }
-      view.setStatus(describe(result), 'info');
+      // O status do sync substitui qualquer aviso anterior: sem repetir aqui, o
+      // usuário não saberia por que a edição das visões está bloqueada.
+      if (chartsEditable) view.setStatus(describe(result), 'info');
+      else view.setStatus(`${describe(result)} · ${CHARTS_UNAVAILABLE}`, 'error');
     } catch (error) {
       if (error instanceof SessionChangedError) return halt(error.message);
       if (halted) return;
@@ -178,7 +184,8 @@ export async function startDashboard(sdk: PipefyAppGlobal, p: PipefyClient, root
         await openForUser();
         cards = [];
         redraw();
-        await runSync();
+        // Um evento de card durante a limpeza também pede sync.
+        await syncUntilIdle();
       } catch (error) {
         console.error('[dashboard] falha ao limpar o cache', error);
         halt('Não foi possível limpar o cache. Recarregue a página.');
@@ -186,10 +193,16 @@ export async function startDashboard(sdk: PipefyAppGlobal, p: PipefyClient, root
     });
   }
 
-  /** Para de sincronizar e avisa o usuário. O que já está na tela continua visível. */
+  /**
+   * Para de sincronizar e de editar as visões, e avisa o usuário. O que já está
+   * na tela continua visível. Depois de uma troca de sessão, o `p.set` gravaria
+   * as visões deste usuário nas do novo.
+   */
   function halt(message: string) {
     halted = true;
     clearTimeout(liveTimer);
+    chartsEditable = false;
+    view.setChartsEditable(false);
     view.setStatus(message, 'error');
     view.setBusy(true);
   }
@@ -237,6 +250,8 @@ function describe(result: SyncResult): string {
 }
 
 const cacheMeta = (n: number) => `${count(n, 'card', 'cards')} no cache local deste usuário`;
+
+const CHARTS_UNAVAILABLE = 'Não foi possível carregar suas visões salvas. Recarregue a página.';
 
 const count = (n: number, one: string, many: string) => `${integer.format(n)} ${n === 1 ? one : many}`;
 

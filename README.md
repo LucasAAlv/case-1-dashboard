@@ -52,10 +52,16 @@ O build sai em `dist/`, com `manifest.json`, a página de init (`index.html`) e 
    - manifest: https://lucasaalv.github.io/case-1-dashboard/manifest.json
    - a branch `gh-pages` guarda só o build, num commit por publicação, separada do código-fonte
 
-   Para publicar uma nova versão a partir do commit atual:
+   Para publicar uma nova versão, só a partir da `main`, depois do release:
 
    ```bash
-   npm run build && git worktree add --force ../gh-pages-publish gh-pages
+   git switch main && git pull && npm ci && npm run build
+   ```
+
+   O worktree parte do `gh-pages` remoto, e não do local, que pode estar desatualizado e fazer o push ser recusado:
+
+   ```bash
+   git fetch origin gh-pages && git worktree add --force -B gh-pages ../gh-pages-publish origin/gh-pages
    ```
 
    ```bash

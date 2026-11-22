@@ -134,7 +134,9 @@ sequenceDiagram
 
 ### Troca de sessão
 
-Todo sync relê o `me.id` na mesma chamada do `cards_count`, sem custo extra. Se alguém sair da conta e entrar com outro usuário em outra aba, o dashboard aberto para de sincronizar antes de gravar qualquer coisa no cache do usuário anterior e pede para recarregar a página.
+Todo sync relê o `me.id` na mesma chamada do `cards_count`, sem custo extra. Se alguém sair da conta e entrar com outro usuário em outra aba, o próximo sync do dashboard aberto para antes de gravar no cache do usuário anterior e pede para recarregar a página.
+
+A conferência acontece no início de cada sync, e não a cada página. Uma troca no meio de uma carga inicial ou de uma reconciliação, que levam cerca de 2 min, não é detectada por ela (veja as limitações).
 
 ---
 
@@ -181,12 +183,13 @@ Também ficou confirmado na prática:
 - **A primeira carga é lenta:** são cerca de 400 chamadas em sequência. Ela é retomável e mostra o progresso, mas a primeira abertura de cada usuário em cada navegador paga esse custo. O tempo real precisa ser medido na org.
 - **Cota da API** (Central de Ajuda, lida em 19/11/2026):
   - **Por período:** 500 requisições a cada 30 s; quem passa disso fica 5 min sem acesso à API. A carga é sequencial e fica bem abaixo desse ritmo.
-  - **Por mês, conforme o plano:** Starter 20, Business 500, Enterprise 10.000, Unlimited sob medida. Num plano Business, uma única carga completa gastaria quase o mês todo; é o argumento mais forte para o cache e o sync incremental.
+  - **Por mês, conforme o plano:** até 20 chamadas à API no Starter, 500 no Business e 10.000 no Enterprise; no Unlimited, o limite é sob medida. Num plano Business, uma única carga completa gastaria quase o mês todo; é o argumento mais forte para o cache e o sync incremental.
   - **Na org do case:** a query `apiUsageStats` (só admin) devolveu `limit: null`, sem limite configurado, e `Counter: 0` em novembro, mesmo depois de chamadas feitas pelo GraphiQL. Pelo jeito, chamadas feitas com a sessão do navegador não entram nesse contador. É uma inferência, não está documentado; resta confirmar se as chamadas do SDK (`p.query`) contam.
   - **Estouro:** é repetido com backoff exponencial, até 4 vezes. Se ainda falhar, o progresso fica salvo e o sync pode ser retomado.
 - **Relógio do navegador:** a marca d'água usa o relógio local com margem de 5 min. Um relógio adiantado além disso pode perder alterações.
 - **Mudança de visibilidade:** se o usuário passar a enxergar cards antigos ou perder acesso a eles sem que o `cards_count` mude, o app não detecta. "Limpar cache local" força uma carga completa.
 - **Criação + exclusão no mesmo intervalo** mantém a contagem e esconde a exclusão até o próximo `cards_count` diferente. Com o app aberto, o evento `onCardDeleted` cobre esse caso.
+- **Troca de sessão durante uma carga longa:** o `me.id` é conferido no início de cada sync. Se a sessão mudar de usuário no meio de uma carga inicial ou de uma reconciliação, as páginas seguintes, já com as permissões do novo usuário, entram no cache do anterior. Conferir a cada página custaria uma chamada a mais por página. "Limpar cache local" refaz a carga.
 - **Mesmo navegador, vários usuários:** os bancos são separados por usuário, mas ficam no mesmo disco. O isolamento é do app, não do sistema operacional.
 - **Armazenamento do navegador:** o IndexedDB de um iframe de terceiro fica particionado pelo site de topo. O Safari pode apagar esses dados depois de alguns dias sem uso, e aí acontece uma nova carga completa.
 - **Cursor recusado:** se a API passar a recusar o cursor salvo de uma carga interrompida, a retomada falha sempre com o mesmo erro. "Limpar cache local" recomeça do zero.

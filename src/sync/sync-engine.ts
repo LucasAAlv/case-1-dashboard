@@ -29,7 +29,8 @@ export interface SyncOptions {
   marginSeconds?: number;
   /**
    * Dono do cache. Se a sessão da Pipefy passar a ser de outro usuário (logout e
-   * login em outra aba), o sync aborta antes de gravar qualquer coisa.
+   * login em outra aba), o sync aborta antes de gravar. A conferência é feita no
+   * início do sync, e não a cada página (limitação em docs/arquitetura.md).
    */
   userId?: string;
   onProgress?: (progress: SyncProgress) => void;
