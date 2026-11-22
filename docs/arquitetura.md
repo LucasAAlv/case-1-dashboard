@@ -140,6 +140,19 @@ Valores para o pipe do case (20 mil cards, 50 por página):
 
 Uma abertura comum custa **3 chamadas**, contra cerca de 400 se o app baixasse tudo a cada vez. O app mostra, depois de cada sync, quantas chamadas ele fez.
 
+### Medido dentro da Pipefy (19/11/2026, pipe 307434671)
+
+| Situação | Resultado |
+| --- | --- |
+| Carga inicial | **401 chamadas**, 20.000 cards gravados, cerca de **2 min e 20 s** (~0,35 s por página de 50 cards) |
+| "Sincronizar agora" sem mudanças | **2 chamadas** |
+| Recarregar a página | 20.000 cards lidos do cache e visões restauradas, mais 1 sync de 2 chamadas |
+
+Também ficou confirmado na prática:
+- o `PipefyApp.init()`/`render` e o `p.query` funcionam no iframe;
+- o IndexedDB persiste dentro do iframe da Pipefy;
+- o `p.set`/`p.get` privado guarda as visões.
+
 ---
 
 ## Isolamento por usuário
@@ -154,7 +167,11 @@ Uma abertura comum custa **3 chamadas**, contra cerca de 400 se o app baixasse t
 ## Limitações conhecidas
 
 - **A primeira carga é lenta:** são cerca de 400 chamadas em sequência. Ela é retomável e mostra o progresso, mas a primeira abertura de cada usuário em cada navegador paga esse custo. O tempo real precisa ser medido na org.
-- **Cota da API:** a documentação não informa o limite de requisições por período. Estouro de cota (`USAGE_LIMIT_EXCEEDED`) é repetido com backoff exponencial, até 4 vezes. Se ainda falhar, o progresso fica salvo e o sync pode ser retomado.
+- **Cota da API** (Central de Ajuda, lida em 19/11/2026):
+  - **Por período:** 500 requisições a cada 30 s; quem passa disso fica 5 min sem acesso à API. A carga é sequencial e fica bem abaixo desse ritmo.
+  - **Por mês, conforme o plano:** até 20 chamadas à API no Starter, 500 no Business e 10.000 no Enterprise; no Unlimited, o limite é sob medida. Num plano Business, uma única carga completa gastaria quase o mês todo; é o argumento mais forte para o cache e o sync incremental.
+  - **Na org do case:** a query `apiUsageStats` (só admin) devolveu `limit: null`, sem limite configurado, e `Counter: 0` em novembro, mesmo depois de chamadas feitas pelo GraphiQL. Pelo jeito, chamadas feitas com a sessão do navegador não entram nesse contador. É uma inferência, não está documentado; resta confirmar se as chamadas do SDK (`p.query`) contam.
+  - **Estouro:** é repetido com backoff exponencial, até 4 vezes. Se ainda falhar, o progresso fica salvo e o sync pode ser retomado.
 - **Relógio do navegador:** a marca d'água usa o relógio local com margem de 5 min. Um relógio adiantado além disso pode perder alterações.
 - **Mudança de visibilidade:** se o usuário passar a enxergar cards antigos ou perder acesso a eles sem que o `cards_count` mude, o app não detecta. "Limpar cache local" força uma carga completa.
 - **Criação + exclusão no mesmo intervalo** mantém a contagem e esconde a exclusão até o próximo `cards_count` diferente. Com o app aberto, o evento `onCardDeleted` cobre esse caso.
