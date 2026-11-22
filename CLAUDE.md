@@ -38,11 +38,7 @@ npm run test:integration  # só test/integration
 npm run build             # gera dist/ (manifest, init e pipe-view)
 ```
 
-Fora da Pipefy não há `appID` na URL, e o app usa o SDK falso ([src/pipefy/mock-sdk.ts](src/pipefy/mock-sdk.ts)) com dados sintéticos:
-
-- parâmetros na URL: `?mockCards=20000&mockLatency=100&mockUser=outro-usuario`;
-- no console: `__mockUpdateCard('<id>')` e `__mockDeleteCard('<id>')`, e depois "Sincronizar agora";
-- o erro `Cannot read properties of null` do SDK real no console é esperado fora do iframe.
+Fora da Pipefy não há `appID` na URL, e o app usa o SDK falso ([src/pipefy/mock-sdk.ts](src/pipefy/mock-sdk.ts)) com dados sintéticos. Os parâmetros, os atalhos no console e o erro esperado estão no [README](README.md#rodar-localmente-sem-a-pipefy).
 
 Antes de dar uma tarefa por concluída, rode `npm run typecheck`, `npm test` e `npm run build`.
 
@@ -50,6 +46,7 @@ Antes de dar uma tarefa por concluída, rode `npm run typecheck`, `npm test` e `
 
 | Pasta | Responsabilidade | Arquivo de referência |
 | --- | --- | --- |
+| `src` (raiz) | Pontos de entrada: `init.ts` registra a feature `pipe-view`; `pipe-view.ts` escolhe entre o SDK real e o falso, avisa quando a página abre fora da Pipefy e fixa o tema claro (D10) | `init.ts`, `pipe-view.ts` |
 | `src/domain` | Card normalizado, parser e conversões | `normalize.ts`, `card-parser.ts` |
 | `src/sync` | Cliente GraphQL sobre o `p.query`, queries do `allCards`, marca d'água e motor de sync | `pipefy-api.ts`, `sync-engine.ts` |
 | `src/cache` | Contrato do cache (`CardStore`) e implementação em IndexedDB | `card-store.ts`, `idb-store.ts` |
@@ -91,8 +88,9 @@ Fatos da API que o código já trata e que não podem ser quebrados:
   - `cards`: `CardRecord` ([src/domain/card.ts](src/domain/card.ts)), chave `id`;
   - `meta`: chave `'sync'`, valor `SyncState` ([src/cache/card-store.ts](src/cache/card-store.ts)), com `phase`, `cursor`, `startedAt`, `watermark`, `lastSyncAt` e `reconciledPipeCount`.
 - Cards e estado gravam **na mesma transação** (`commit`): o cursor nunca fica à frente dos dados.
-- A marca d'água é o início do último sync completo, com margem de 5 min, e nunca anda para trás (D4).
-- Mudar um store ou o formato do `CardRecord` exige subir o `VERSION` e tratar o upgrade. É mudança no modelo de dados: proponha antes.
+- A marca d'água é o início do último sync concluído, com margem de 5 min, e nunca anda para trás (D4).
+- Campo novo no `CardRecord` **não** muda o `VERSION`: o IndexedDB guarda o objeto inteiro, sem schema. Os registros antigos só ficam sem o campo (ver DT3).
+- Criar, remover ou alterar um store ou índice exige subir o `VERSION`. O `upgrade()` atual cria os dois stores sem condição e lançaria `ConstraintError` num banco que já existe: ele precisa passar a ramificar por `oldVersion`. É mudança no modelo de dados: proponha antes.
 
 ### Visões (SDK)
 
@@ -111,7 +109,7 @@ Convenções:
 
 - `describe` com o nome da função ou do módulo, e `it` com uma frase em português que diz o comportamento ("devolve null para vazio, nulo ou texto não numérico").
 - Toda regra nova de parser, conversão, marca d'água ou agregação ganha teste, incluindo campo vazio ou nulo e campos fora de ordem.
-- A tela e a orquestração (`src/app`, `src/ui`, `render-chart.ts`) não têm teste automatizado (DT7). Mudanças nelas são validadas no `npm run dev` com o SDK falso e, quando dependem da Pipefy, dentro do pipe.
+- A tela, a orquestração e a entrada da página (`src/app`, `src/ui`, `render-chart.ts`, `pipe-view.ts`) não têm teste automatizado (DT7). Mudanças nelas são validadas no `npm run dev` com o SDK falso e, quando dependem da Pipefy, dentro do pipe.
 
 ## Padrão para novas funcionalidades
 
@@ -125,7 +123,7 @@ Caminhos já usados no código:
   3. entrada no tipo `Dimension` e no `ORDER` de `src/analytics/aggregate.ts`;
   4. rótulo em `DIMENSIONS` de `src/charts/chart-spec.ts`.
 
-  Os caches existentes não são reprocessados (DT3), então o campo novo fica nulo até uma carga completa. Diga isso ao propor.
+  Os caches existentes não são reprocessados (DT3). Nenhum sync refaz a carga completa sozinho, então o campo novo fica nulo nos caches que já existem até o usuário usar "Limpar cache local". Diga isso ao propor.
 - **Nova dimensão que depende de hoje**: siga o `dueStatus`, calculado no `keyOf` da agregação e nunca gravado no cache (D8).
 - **Nova agregação**: `Aggregation` e `finalize` em `aggregate.ts`, depois `AGGREGATIONS` em `chart-spec.ts`, com teste em `test/unit/analytics/aggregate.test.ts`.
 - **Novo tipo de gráfico**: `ChartType` e `CHART_TYPES` em `chart-spec.ts`, depois o mapeamento em `src/charts/render-chart.ts`.
@@ -141,10 +139,10 @@ Regras de código que já valem no projeto:
 
 ## Como trabalhar aqui
 
-- **O Lucas decide e o agente executa.** Mudança de arquitetura, biblioteca nova, mudança no modelo de dados ou no schema do cache: proponha as opções com os trade-offs e espere a decisão. Na dúvida, pergunte antes de assumir.
+- **Decisão de desenho vem antes do código.** Mudança de arquitetura, biblioteca nova, mudança no modelo de dados ou no schema do cache: proponha as opções com os trade-offs e espere a decisão. Na dúvida, pergunte antes de assumir.
 - Escopo exato do pedido: não refatore código adjacente e não acrescente comentário em código que não foi tocado. Dependência nova só com necessidade real, e com decisão.
-- **Não invente API.** O que não estiver testado em `docs/` ou no código sobre o SDK de Apps ou a API GraphQL deve ser conferido em https://developers.pipefy.com e https://api-docs.pipefy.com, ou testado pelo Lucas no GraphiQL.
-- **Os dados da org não são nossos.** Nada de mutation em cards, pipes ou databases sem pedido explícito. Toda alteração de teste é revertida.
+- **Não invente API.** O que não estiver testado em `docs/` ou no código sobre o SDK de Apps ou a API GraphQL deve ser conferido em https://developers.pipefy.com e https://api-docs.pipefy.com, ou testado no GraphiQL.
+- **Os dados da org pertencem à banca.** Nada de mutation em cards, pipes ou databases sem pedido explícito. Toda alteração de teste é revertida.
 - **Segredos nunca entram no repositório**, que é público. O app não usa token. Se um dia precisar, vai para `.env` (já no `.gitignore`), com um `.env.example` sem valores.
 - Decisão relevante entra em `docs/decisoes.md` (próximo `D<n>`, com data, escolha, alternativas e motivo). Limitação ou débito novo entra em `docs/arquitetura.md` ou `docs/debito-tecnico.md`. O README e a pasta `docs/` são atualizados junto com o código.
 - Respostas sem preâmbulo e sem resumo final. Texto só para decisões que não são óbvias.
