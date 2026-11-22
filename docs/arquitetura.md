@@ -180,7 +180,7 @@ Também ficou confirmado na prática:
 
 ## Limitações conhecidas
 
-- **A primeira carga é lenta:** são cerca de 400 chamadas em sequência. Ela é retomável e mostra o progresso, mas a primeira abertura de cada usuário em cada navegador paga esse custo. O tempo real precisa ser medido na org.
+- **A primeira carga é lenta:** são cerca de 400 chamadas em sequência. Ela é retomável e mostra o progresso, mas a primeira abertura de cada usuário em cada navegador paga esse custo. No pipe do case, foram 401 chamadas e cerca de 2 min e 20 s (ver "Medido dentro da Pipefy").
 - **Cota da API** (Central de Ajuda, lida em 19/11/2026):
   - **Por período:** 500 requisições a cada 30 s; quem passa disso fica 5 min sem acesso à API. A carga é sequencial e fica bem abaixo desse ritmo.
   - **Por mês, conforme o plano:** até 20 chamadas à API no Starter, 500 no Business e 10.000 no Enterprise; no Unlimited, o limite é sob medida. Num plano Business, uma única carga completa gastaria quase o mês todo; é o argumento mais forte para o cache e o sync incremental.
