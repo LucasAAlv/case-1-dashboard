@@ -32,15 +32,6 @@ O app não substitui os recursos nativos. Ele cobre o que exige **dados derivado
 
 **Não verificado:** se o Dashboard nativo filtra os números pelos cards que cada usuário enxerga. No app, esse isolamento vem do `p.query`, que roda com as permissões de quem está logado.
 
---- | --- | --- |
-| Agrupar a empresa sem o sufixo societário ("Acme Holding", "Acme Group" → "Acme") | Agrupa pelo texto do campo | Dimensão derivada `Empresa (sem sufixo)` e `Domínio do e-mail` |
-| Valor Total guardado como texto, data no formato DD/MM/AAAA | Depende do tipo do campo | Conversão para número e data ISO na entrada, uma vez só |
-| "Vencidos vs. a vencer" em relação a hoje | Exige filtro manual | Dimensão `Situação de vencimento`, recalculada no dia |
-| Várias visões montadas pelo próprio usuário, salvas só para ele | Relatórios compartilhados no pipe | Visões salvas por usuário, no escopo privado do SDK |
-| Abrir rápido sem consultar a API inteira | — | Cache local por usuário com sync incremental |
-
-O app não substitui os relatórios nativos. Ele cobre o que exige dados derivados e uma visão pessoal.
-
 ---
 
 ## Visão geral
