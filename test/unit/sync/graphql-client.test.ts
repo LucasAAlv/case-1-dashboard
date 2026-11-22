@@ -42,6 +42,13 @@ describe('createSdkClient', () => {
     await expect(client.request('{ me { id } }')).rejects.toMatchObject({ retryable: true });
   });
 
+  it('não repete códigos que não estão na tabela oficial de erros', async () => {
+    for (const code of ['TIMEOUT', 'INTERNAL_SERVER_ERROR']) {
+      const client = createSdkClient(sdkReturning({ errors: [{ message: 'x', extensions: { code } }] }));
+      await expect(client.request('{ me { id } }')).rejects.toMatchObject({ retryable: false });
+    }
+  });
+
   it('lança erro quando não há data nem errors', async () => {
     const client = createSdkClient(sdkReturning({}));
     await expect(client.request('{ me { id } }')).rejects.toBeInstanceOf(GraphQLRequestError);

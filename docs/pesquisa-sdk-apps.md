@@ -96,6 +96,7 @@ Tudo aqui vem da documentação, **não foi testado na prática**. Quando a docu
 | Requisições por período | **não está em developers.pipefy.com**. Fica na seção "Request Limits" de https://help.pipefy.com/en/articles/5580799-how-to-use-pipefy-s-api (ainda não lido) |
 
 - Estouro de cota: HTTP 429 ou `extensions.code: "USAGE_LIMIT_EXCEEDED"` dentro de `errors`, com HTTP 200.
+- **Lido em 22/11/2026:** a tabela de códigos ("Status codes and Error Handling") não tem `TIMEOUT` nem `INTERNAL_SERVER_ERROR`. 5xx e 429 aparecem só como status HTTP, sem orientação de retry. Duas outras páginas ligam o `USAGE_LIMIT_EXCEEDED` ao limite de envio de e-mail (2 por minuto).
 - Cada erro traz `message`, `locations`, `path` e `extensions { code, correlation_id }`.
 - `Retry-After` e backoff: não documentados.
 - Existe uma query de uso da API por org e por token, só para Super Admin ou Admin. A resposta de exemplo traz `limit: 1000`, sem período informado. Pode servir para mostrar o custo em chamadas na apresentação.

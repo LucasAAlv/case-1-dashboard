@@ -10,14 +10,17 @@ export class GraphQLRequestError extends Error {
   constructor(
     message: string,
     readonly codes: readonly string[],
-    /** Vale tentar de novo: falha de rede, timeout ou estouro de cota. */
+    /** Vale tentar de novo: falha de transporte ou estouro de cota. */
     readonly retryable: boolean,
   ) {
     super(message);
   }
 }
 
-const RETRYABLE_CODES = new Set(['USAGE_LIMIT_EXCEEDED', 'TIMEOUT', 'INTERNAL_SERVER_ERROR']);
+// Só códigos da tabela oficial de erros da Pipefy (D7 em docs/decisoes.md).
+// 5xx e 429 são status HTTP, e não `extensions.code`. A hipótese, não
+// verificada, é que cheguem como falha de transporte, que já é repetida.
+const RETRYABLE_CODES = new Set(['USAGE_LIMIT_EXCEEDED']);
 
 /**
  * Adapta o `p.query` do SDK. Ele roda com as permissões do usuário logado e

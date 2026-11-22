@@ -117,7 +117,7 @@ Num `USAGE_LIMIT_EXCEEDED`, as 4 tentativas caem dentro do bloqueio e o sync fal
 
 - Tratar o `USAGE_LIMIT_EXCEEDED` à parte: não repetir e interromper o sync, com o progresso salvo.
 - Mostrar "Limite da API atingido. Nova tentativa às HH:MM." e agendar a retomada para depois de 5 min.
-- Manter o backoff curto para os outros erros retentáveis (rede, `TIMEOUT`, `INTERNAL_SERVER_ERROR`).
+- Manter o backoff curto para a falha de transporte (D7).
 
 ### Custo
 
