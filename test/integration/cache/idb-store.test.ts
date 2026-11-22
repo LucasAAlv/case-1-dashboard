@@ -106,4 +106,20 @@ describe('IndexedDB store', () => {
     expect(await store.ids()).toEqual(['1']);
     expect(await store.loadState()).toMatchObject({ cursor: '50' });
   });
+
+  it('limpa o cache mesmo com outra aba segurando o banco aberto', async () => {
+    let closedByOtherTab = false;
+    const otherTab = await openCardStore('u1', PIPE, {
+      onClosedByOtherTab: () => (closedByOtherTab = true),
+    });
+    await otherTab.commit({ upsert: [card('1')], state: state('50') });
+
+    // Sem o `blocking`, o `deleteDB` ficaria esperando a outra conexão fechar.
+    await deleteCardStore('u1', PIPE);
+
+    expect(closedByOtherTab).toBe(true);
+    const reopened = await open('u1');
+    expect(await reopened.count()).toBe(0);
+    expect(await reopened.loadState()).toBeNull();
+  });
 });
