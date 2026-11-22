@@ -57,4 +57,9 @@ describe('createPipefyApi', () => {
     expect(request).toHaveBeenCalledTimes(1);
     expect(request.mock.calls[0]![0]).toBe('{ me { id } pipe(id: 1) { cards_count } }');
   });
+
+  it('falha com mensagem clara quando a sessão expirou e o me vem nulo', async () => {
+    const { client } = clientReturning({ me: null, pipe: { cards_count: 20000 } });
+    await expect(createPipefyApi(client, '1').status()).rejects.toThrow('Não foi possível identificar o usuário logado');
+  });
 });

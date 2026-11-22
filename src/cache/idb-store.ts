@@ -18,7 +18,10 @@ const VERSION = 1;
  * dispositivo; a separação é do app, não do sistema operacional.
  */
 export function cacheName(userId: string, pipeId: string): string {
-  if (!userId.trim() || !pipeId.trim()) throw new Error('userId e pipeId são obrigatórios');
+  // O `:` separa as partes do nome. Sem ele nos ids, dois pares diferentes
+  // nunca geram o mesmo banco (D3). O pipeId segue a validação da API (D6).
+  if (!/^[\w-]+$/.test(userId)) throw new Error(`userId inválido: ${userId}`);
+  if (!/^\d+$/.test(pipeId)) throw new Error(`pipeId inválido: ${pipeId}`);
   return `pipefy-dashboard:${userId}:${pipeId}`;
 }
 
@@ -67,12 +70,20 @@ class IdbStore implements IdbCardStore {
   async commit({ upsert = [], remove = [], state }: StoreCommit): Promise<void> {
     const tx = this.db.transaction(['cards', 'meta'], 'readwrite');
     const cards = tx.objectStore('cards');
-    // As requisições são enfileiradas na transação; esperar só o `done` evita
-    // um ida-e-volta por card. Um erro (cota, por exemplo) chega pelo `tx.done`;
-    // o `catch` vazio só evita uma rejeição não tratada por requisição.
-    for (const card of upsert) cards.put(card).catch(ignore);
-    for (const id of remove) cards.delete(id).catch(ignore);
-    if (state) tx.objectStore('meta').put(state, 'sync').catch(ignore);
+    try {
+      // As requisições são enfileiradas na transação; esperar só o `done`
+      // evita um ida-e-volta por card. O erro chega pelo `tx.done`; o `catch`
+      // vazio só evita uma rejeição não tratada por requisição.
+      for (const card of upsert) cards.put(card).catch(ignore);
+      for (const id of remove) cards.delete(id).catch(ignore);
+      if (state) tx.objectStore('meta').put(state, 'sync').catch(ignore);
+    } catch (error) {
+      // Um `put` pode lançar na hora (card sem chave, por exemplo). Sem o abort,
+      // a transação gravaria as requisições já enfileiradas, sem o estado.
+      tx.abort();
+      tx.done.catch(ignore);
+      throw error;
+    }
     await tx.done;
   }
 

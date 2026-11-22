@@ -43,6 +43,10 @@ export const CHART_TYPES: Record<ChartType, string> = {
 export const MAX_CHARTS = 24;
 export const MAX_TITLE = 80;
 export const MAX_LIMIT = 50;
+/** Rosca com mais fatias que isso fica ilegível: é o número de cores categóricas. */
+export const MAX_DOUGHNUT_SLICES = 8;
+/** Grupos de uma rosca: as fatias, menos "Outros" e "(vazio)". */
+export const MAX_DOUGHNUT_LIMIT = MAX_DOUGHNUT_SLICES - 2;
 
 const isKey = <T extends string>(map: Record<T, string>, value: unknown): value is T =>
   typeof value === 'string' && Object.hasOwn(map, value);
@@ -55,15 +59,17 @@ function toSpec(value: unknown): ChartSpec | null {
     return null;
   }
   if (typeof v.limit !== 'number' || !Number.isInteger(v.limit) || v.limit < 1 || v.limit > MAX_LIMIT) return null;
-  const title = typeof v.title === 'string' ? v.title.trim().slice(0, MAX_TITLE) : '';
-  return {
-    id: v.id,
-    title,
-    dimension: v.dimension,
-    aggregation: v.aggregation,
-    chartType: v.chartType,
-    limit: v.limit,
-  };
+
+  // Uma visão salva passa pelas mesmas regras do construtor, mesmo que tenha
+  // sido gravada por outra versão do app ou editada à mão. Rosca por mês não
+  // tem corte em "Outros" (a linha do tempo não é truncada), então vira linha.
+  const dimension = v.dimension;
+  const aggregation = v.aggregation;
+  const chartType = v.chartType === 'doughnut' && dimension === 'dueMonth' ? 'line' : v.chartType;
+  const limit = chartType === 'doughnut' ? Math.min(v.limit, MAX_DOUGHNUT_LIMIT) : v.limit;
+  const typed = typeof v.title === 'string' ? v.title.trim().slice(0, MAX_TITLE) : '';
+  const title = typed || defaultTitle({ dimension, aggregation });
+  return { id: v.id, title, dimension, aggregation, chartType, limit };
 }
 
 /**

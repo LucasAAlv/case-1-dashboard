@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { MAX_CHARTS, parseChartSpecs, type ChartSpec } from '../../../src/charts/chart-spec';
+import { MAX_CHARTS, MAX_DOUGHNUT_LIMIT, parseChartSpecs, type ChartSpec } from '../../../src/charts/chart-spec';
 import { createSdkChartRepository } from '../../../src/charts/chart-repository';
 import type { PipefyClient } from '../../../src/pipefy/sdk';
 
@@ -35,6 +35,20 @@ describe('parseChartSpecs', () => {
     expect(parseChartSpecs('{"a":1}')).toEqual([]);
     expect(parseChartSpecs(null)).toEqual([]);
     expect(parseChartSpecs(undefined)).toEqual([]);
+  });
+
+  it('aplica as regras do construtor a uma visão salva', () => {
+    const raw = JSON.stringify([
+      { ...valid, id: 'rosca', chartType: 'doughnut', limit: 50 },
+      { ...valid, id: 'mes', chartType: 'doughnut', dimension: 'dueMonth', limit: 50 },
+      { ...valid, id: 'sem-titulo', title: '   ' },
+      { ...valid, id: 'sem-campo', title: undefined },
+    ]);
+    const [doughnut, month, blank, missing] = parseChartSpecs(raw);
+    expect(doughnut).toMatchObject({ chartType: 'doughnut', limit: MAX_DOUGHNUT_LIMIT });
+    expect(month).toMatchObject({ chartType: 'line', limit: 50 });
+    expect(blank!.title).toBe('Soma do Valor Total por estado');
+    expect(missing!.title).toBe('Soma do Valor Total por estado');
   });
 
   it('limita o tamanho do título e o número de gráficos', () => {

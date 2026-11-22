@@ -34,6 +34,12 @@ async function main() {
   } catch (error) {
     console.error('[dashboard] falha no init do SDK', error);
     root.textContent = 'Não foi possível conectar à Pipefy. Recarregue a visão Dashboard do pipe.';
+    // Sem o `render`, a Pipefy volta ao Kanban e a mensagem nunca aparece.
+    try {
+      sdk.render(() => undefined);
+    } catch (renderError) {
+      console.error('[dashboard] falha no render do SDK', renderError);
+    }
     return;
   }
   // `render` avisa a Pipefy que a página carregou; sem ele, o usuário volta ao

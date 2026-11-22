@@ -53,11 +53,13 @@ describe('aggregate', () => {
     });
   });
 
-  it('omite o grupo sem nenhum valor numérico em média, mínimo e máximo', () => {
+  it('omite o grupo sem nenhum valor numérico em soma, média, mínimo e máximo', () => {
     const only = [card({ state: 'RS', totalValue: null })];
-    expect(aggregate(only, { dimension: 'state', aggregation: 'avg' }, { today: TODAY })).toEqual([]);
-    expect(aggregate(only, { dimension: 'state', aggregation: 'sum' }, { today: TODAY })).toEqual([
-      { label: 'RS', value: 0 },
+    for (const aggregation of ['sum', 'avg', 'min', 'max'] as const) {
+      expect(aggregate(only, { dimension: 'state', aggregation }, { today: TODAY })).toEqual([]);
+    }
+    expect(aggregate(only, { dimension: 'state', aggregation: 'count' }, { today: TODAY })).toEqual([
+      { label: 'RS', value: 1 },
     ]);
   });
 
@@ -95,6 +97,28 @@ describe('aggregate', () => {
       { label: 'A', value: 100 },
       { label: 'Outros', value: (10 + 1 + 3) / 3 },
     ]);
+  });
+
+  it('diferencia "Outros" e "(vazio)" de valores reais com o mesmo texto', () => {
+    const clash = [
+      card({ city: 'Outros', totalValue: 1 }),
+      card({ city: 'Outros', totalValue: 1 }),
+      card({ city: '(vazio)', totalValue: 1 }),
+      card({ city: 'B', totalValue: 1 }),
+      card({ city: null, totalValue: 1 }),
+    ];
+    const labels = aggregate(clash, { dimension: 'city', aggregation: 'count', limit: 2 }, { today: TODAY }).map(
+      (r) => r.label,
+    );
+    expect(labels).toEqual(['Outros', '(vazio)', 'Outros (demais grupos)', '(vazio) (sem valor)']);
+  });
+
+  it('não muda os rótulos sintéticos quando não há colisão', () => {
+    const many = [card({ city: 'A' }), card({ city: 'A' }), card({ city: 'B' }), card({ city: null })];
+    const labels = aggregate(many, { dimension: 'city', aggregation: 'count', limit: 1 }, { today: TODAY }).map(
+      (r) => r.label,
+    );
+    expect(labels).toEqual(['A', 'Outros', '(vazio)']);
   });
 
   it('agrupa por situação de vencimento em relação a hoje', () => {

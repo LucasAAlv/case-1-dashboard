@@ -64,9 +64,11 @@ export function createPipefyApi(client: GraphQLClient, pipeId: string): PipefyAp
     },
 
     async status() {
-      const data = await client.request<{ me: { id: string }; pipe: { cards_count: number } }>(
+      const data = await client.request<{ me: { id: string } | null; pipe: { cards_count: number } }>(
         `{ me { id } pipe(id: ${pipeId}) { cards_count } }`,
       );
+      // Sessão expirada devolve `me` nulo.
+      if (!data.me?.id) throw new Error('Não foi possível identificar o usuário logado. Recarregue a página');
       return { userId: String(data.me.id), cardsCount: data.pipe.cards_count };
     },
   };
