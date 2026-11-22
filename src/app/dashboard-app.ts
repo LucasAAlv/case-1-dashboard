@@ -131,12 +131,15 @@ export async function startDashboard(sdk: PipefyAppGlobal, p: PipefyClient, root
       rerun = true;
       return running;
     }
-    return exclusive(async () => {
-      do {
-        rerun = false;
-        await runSync();
-      } while (rerun && !halted);
-    });
+    return exclusive(syncUntilIdle);
+  }
+
+  /** Repete o sync enquanto chegarem pedidos durante a execução. */
+  async function syncUntilIdle() {
+    do {
+      rerun = false;
+      await runSync();
+    } while (rerun && !halted);
   }
 
   async function runSync() {
@@ -178,7 +181,8 @@ export async function startDashboard(sdk: PipefyAppGlobal, p: PipefyClient, root
         await openForUser();
         cards = [];
         redraw();
-        await runSync();
+        // Um evento de card durante a limpeza também pede sync.
+        await syncUntilIdle();
       } catch (error) {
         console.error('[dashboard] falha ao limpar o cache', error);
         halt('Não foi possível limpar o cache. Recarregue a página.');
