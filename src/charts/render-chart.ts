@@ -14,7 +14,7 @@ import {
   type ChartConfiguration,
 } from 'chart.js';
 import type { AggregateRow } from '../analytics/aggregate';
-import type { ChartSpec } from './chart-spec';
+import { MAX_DOUGHNUT_SLICES, type ChartSpec } from './chart-spec';
 
 // Registro explícito: só os módulos usados entram no bundle.
 Chart.register(
@@ -31,8 +31,7 @@ Chart.register(
   Legend,
 );
 
-/** Rosca com mais fatias que isso fica ilegível; o construtor limita os grupos. */
-export const MAX_DOUGHNUT_SLICES = 8;
+export { MAX_DOUGHNUT_SLICES };
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const brlCompact = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' });

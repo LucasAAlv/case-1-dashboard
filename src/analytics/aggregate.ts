@@ -86,13 +86,13 @@ function merge(into: Accumulator, from: Accumulator) {
   into.max = Math.max(into.max, from.max);
 }
 
-/** Valor final do grupo; null quando não há base (média de grupo sem valores). */
+/** Valor final do grupo; null quando não há base (grupo sem nenhum valor numérico). */
 function finalize(acc: Accumulator, aggregation: Aggregation): number | null {
   switch (aggregation) {
     case 'count':
       return acc.count;
     case 'sum':
-      return acc.sum;
+      return acc.n ? acc.sum : null;
     case 'avg':
       return acc.n ? acc.sum / acc.n : null;
     case 'min':
@@ -100,6 +100,20 @@ function finalize(acc: Accumulator, aggregation: Aggregation): number | null {
     case 'max':
       return acc.n ? acc.max : null;
   }
+}
+
+/**
+ * Rótulo de um grupo sintético ("Outros", "(vazio)"). Se um valor real tiver o
+ * mesmo texto, o sintético ganha um sufixo, para o gráfico não mostrar duas
+ * barras com o mesmo nome.
+ */
+function syntheticLabel(
+  label: string,
+  suffix: string,
+  entries: readonly { label: string; value: number | null }[],
+): string {
+  // Grupo com valor null não aparece no gráfico, então não colide.
+  return entries.some((entry) => entry.value !== null && entry.label === label) ? `${label} ${suffix}` : label;
 }
 
 function keyOf(card: CardRecord, dimension: Dimension, today: string): string | null {
@@ -143,9 +157,14 @@ export function aggregate(
   if (order === 'value' && entries.length > limit) {
     const others = newAcc();
     for (const entry of entries.slice(limit)) merge(others, entry.acc);
-    entries = [...entries.slice(0, limit), { label: OTHERS_LABEL, acc: others, value: finalize(others, query.aggregation) }];
+    const head = entries.slice(0, limit);
+    const label = syntheticLabel(OTHERS_LABEL, '(demais grupos)', head);
+    entries = [...head, { label, acc: others, value: finalize(others, query.aggregation) }];
   }
-  if (empty) entries.push({ label: EMPTY_LABEL, acc: empty, value: finalize(empty, query.aggregation) });
+  if (empty) {
+    const label = syntheticLabel(EMPTY_LABEL, '(sem valor)', entries);
+    entries.push({ label, acc: empty, value: finalize(empty, query.aggregation) });
+  }
 
   return entries.flatMap(({ label, value }) => (value === null ? [] : [{ label, value }]));
 }
