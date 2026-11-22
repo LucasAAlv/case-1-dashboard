@@ -22,7 +22,7 @@ Registro das decisões do Case 1, com data, opção escolhida, alternativas e mo
 
 **Alternativas:**
 - React ou Vue: a UI é um formulário e uma grade de gráficos, e um framework acrescentaria peso e conceitos sem ganho real.
-- ECharts: mais recursos, mas o bundle é maior. O Chart.js cobre barra, linha, pizza e rosca, que é o que o construtor oferece.
+- ECharts: mais recursos, mas o bundle é maior. O Chart.js cobre barras verticais e horizontais, linha e rosca, que é o que o construtor oferece.
 - SQL no navegador (sql.js ou DuckDB-wasm): a agregação de 20 mil linhas em TypeScript leva milissegundos, e o WASM acrescentaria megabytes.
 
 **Motivo:** a vaga pede TypeScript, e o conjunto é pequeno, testável e fácil de explicar.

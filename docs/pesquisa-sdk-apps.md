@@ -2,7 +2,7 @@
 
 Leitura da documentação oficial em [developers.pipefy.com](https://developers.pipefy.com), feita em 18/11/2026 para embasar a escolha da stack do Case 1.
 
-Tudo aqui vem da documentação, **não foi testado na prática**. Quando a documentação não cobre um ponto, isso está dito como "não documentado".
+O texto vem da documentação e **não foi testado na prática**, salvo onde o próprio trecho traz uma data posterior, do que foi medido ou lido depois. Quando a documentação não cobre um ponto, isso está dito como "não documentado".
 
 ---
 
@@ -93,7 +93,7 @@ Tudo aqui vem da documentação, **não foi testado na prática**. Quando a docu
 | Profundidade | 15 |
 | Tempo por query | 33 s |
 | Tamanho da página | "usually 50". Pedir mais devolve 50, mas a complexidade é calculada sobre o número pedido |
-| Requisições por período | **não está em developers.pipefy.com**. Fica na seção "Request Limits" de https://help.pipefy.com/en/articles/5580799-how-to-use-pipefy-s-api (ainda não lido) |
+| Requisições por período | **não está em developers.pipefy.com**. Fica na seção "Request Limits" de https://help.pipefy.com/en/articles/5580799-how-to-use-pipefy-s-api, lida em 19/11/2026: 500 a cada 30 s, mais uma cota mensal por plano (ver [arquitetura.md](arquitetura.md#limitações-conhecidas)) |
 
 - Estouro de cota: HTTP 429 ou `extensions.code: "USAGE_LIMIT_EXCEEDED"` dentro de `errors`, com HTTP 200.
 - **Lido em 22/11/2026:** a tabela de códigos ("Status codes and Error Handling") não tem `TIMEOUT` nem `INTERNAL_SERVER_ERROR`. 5xx e 429 aparecem só como status HTTP, sem orientação de retry. Duas outras páginas ligam o `USAGE_LIMIT_EXCEEDED` ao limite de envio de e-mail (2 por minuto).
@@ -134,9 +134,9 @@ Na data desta pesquisa, a stack ainda não estava decidida. A documentação fav
 - **definições de gráficos** em `p.set('pipe', 'private', ...)`;
 - **hospedagem** estática com HTTPS, ou um túnel durante o desenvolvimento.
 
-Riscos ainda não verificados:
+Riscos levantados na pesquisa:
 
-- O IndexedDB dentro de um iframe de terceiro fica particionado pelo site de topo (`app.pipefy.com`). Deve funcionar, mas o Safari pode apagar esses dados depois de alguns dias.
+- O IndexedDB dentro de um iframe de terceiro fica particionado pelo site de topo (`app.pipefy.com`). O Safari pode apagar esses dados depois de alguns dias. **Verificado em 19/11/2026:** no Chrome, o cache persiste dentro do iframe da Pipefy.
 - Dois usuários no mesmo navegador dividem o mesmo IndexedDB. A separação por `user_id` funciona como regra do app, mas não isola os dados no nível do dispositivo. Isso entra em "limitações".
 
 A alternativa com backend só se sustenta se o `getAuthToken()` servir para chamar a API como o usuário (seção 1.3).
@@ -147,7 +147,7 @@ A alternativa com backend só se sustenta se o `getAuthToken()` servir para cham
 
 - **Registro do app:** exige um admin da org. O app foi registrado na org do case como "Dashboard de Cards".
 - **`getAuthToken()`:** não foi testado. Como o `p.query` já roda com as permissões de quem está logado, a escolha foi o app só de front-end, e o backend com `getAuthToken()` ficou como evolução (decisão D1 em `docs/decisoes.md`).
-- **Leituras não feitas nesta pesquisa:** `reference/service-accounts`, `reference/authentication` e a seção "Request Limits" da Central de Ajuda.
+- **Leituras não feitas nesta pesquisa:** `reference/service-accounts` e `reference/authentication`. A seção "Request Limits" da Central de Ajuda foi lida depois, em 19/11/2026 (seção 4).
 
 ---
 
