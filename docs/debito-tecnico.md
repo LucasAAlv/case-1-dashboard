@@ -31,7 +31,7 @@ Cada item traz o estado atual, o risco, a proposta e o custo estimado.
 
 ### Risco
 
-- Não há como responder, depois do fato, "quando foi o último sync completo deste usuário, quanto custou e por que falhou", nem mostrar isso na demo além da última linha de status.
+- Não há como responder, depois do fato, "quando foi o último sync concluído deste usuário, quanto custou e por que falhou", nem mostrar isso na demo além da última linha de status.
 - Diagnóstico de cota fica impreciso: a contagem exibida subestima o consumo quando há retry.
 - Sem o `correlation_id`, um erro da API não pode ser levado ao suporte da Pipefy.
 

@@ -88,7 +88,7 @@ Fatos da API que o código já trata e que não podem ser quebrados:
   - `cards`: `CardRecord` ([src/domain/card.ts](src/domain/card.ts)), chave `id`;
   - `meta`: chave `'sync'`, valor `SyncState` ([src/cache/card-store.ts](src/cache/card-store.ts)), com `phase`, `cursor`, `startedAt`, `watermark`, `lastSyncAt` e `reconciledPipeCount`.
 - Cards e estado gravam **na mesma transação** (`commit`): o cursor nunca fica à frente dos dados.
-- A marca d'água é o início do último sync completo, com margem de 5 min, e nunca anda para trás (D4).
+- A marca d'água é o início do último sync concluído, com margem de 5 min, e nunca anda para trás (D4).
 - Campo novo no `CardRecord` **não** muda o `VERSION`: o IndexedDB guarda o objeto inteiro, sem schema. Os registros antigos só ficam sem o campo (ver DT3).
 - Criar, remover ou alterar um store ou índice exige subir o `VERSION`. O `upgrade()` atual cria os dois stores sem condição e lançaria `ConstraintError` num banco que já existe: ele precisa passar a ramificar por `oldVersion`. É mudança no modelo de dados: proponha antes.
 

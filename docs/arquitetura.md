@@ -117,7 +117,7 @@ sequenceDiagram
 ### Incremental
 
 - Filtra `updated_at gte <marca d'água − 5 min>` e faz upsert por id.
-- A marca d'água é o **início do último sync completo**. Tudo o que mudou antes desse instante já foi lido; o que mudou durante ou depois tem `updated_at` posterior e entra no próximo sync (ver D4 em [decisoes.md](decisoes.md)).
+- A marca d'água é o **início do último sync concluído**. Tudo o que mudou antes desse instante já foi lido; o que mudou durante ou depois tem `updated_at` posterior e entra no próximo sync (ver D4 em [decisoes.md](decisoes.md)).
 - Se o incremental cair no meio, a marca não avança e o próximo sync repete a janela.
 
 ### Exclusões

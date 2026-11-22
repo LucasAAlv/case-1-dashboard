@@ -1,7 +1,7 @@
 /**
  * Marca d'água do sync incremental (D4 em docs/decisoes.md).
  *
- * A marca é o instante em que o último sync completo começou. Tudo que foi
+ * A marca é o instante em que o último sync concluído começou. Tudo que foi
  * alterado antes desse instante já estava visível quando o sync paginou o pipe;
  * o que mudou durante ou depois tem `updated_at` posterior e entra no próximo.
  *
@@ -24,7 +24,7 @@ export function incrementalSince(watermark: string, marginSeconds: number): stri
   return toUtcSeconds(Date.parse(watermark) - marginSeconds * 1000);
 }
 
-/** Próxima marca depois de um sync completo. Nunca anda para trás (relógio ajustado, por exemplo). */
+/** Próxima marca depois de um sync concluído. Nunca anda para trás (relógio ajustado, por exemplo). */
 export function nextWatermark(current: string | null, syncStartedAt: string): string {
   return current !== null && current > syncStartedAt ? current : syncStartedAt;
 }
