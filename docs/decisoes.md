@@ -147,4 +147,4 @@ Uma revisão no nível *high* encontrou 14 pontos. Foram corrigidos, com teste q
 - Manter uma pasta por módulo e só documentar a classificação: custo zero, mas a separação não aparece na estrutura nem no CI.
 - Separar por sufixo (`*.int.test.ts`) sem mover arquivos: menos mudança, mas a separação fica menos visível.
 
-**Motivo:** a separação fica explícita na estrutura e no CI. Uma falha mostra de cara se quebrou uma regra isolada ou a combinação dos módulos. Com 76 testes em menos de 1 s, não há ganho de tempo; o ganho é de clareza.
+**Motivo:** a separação fica explícita na estrutura e no CI. Uma falha mostra de cara se quebrou uma regra isolada ou a combinação dos módulos. Com cerca de 80 testes, todos em menos de 1 s, não há ganho de tempo; o ganho é de clareza.
