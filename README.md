@@ -52,10 +52,10 @@ O build sai em `dist/`, com `manifest.json`, a página de init (`index.html`) e 
    - manifest: https://lucasaalv.github.io/case-1-dashboard/manifest.json
    - a branch `gh-pages` guarda só o build, num commit por publicação, separada do código-fonte
 
-   Para publicar uma nova versão a partir do commit atual:
+   Para publicar uma nova versão, só a partir da `main`, depois do release:
 
    ```bash
-   npm run build && git worktree add --force ../gh-pages-publish gh-pages
+   git switch main && git pull && npm ci && npm run build && git worktree add --force ../gh-pages-publish gh-pages
    ```
 
    ```bash
