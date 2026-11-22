@@ -58,7 +58,7 @@ npm run typecheck
 npm run build
 ```
 
-O build sai em `dist/`, com `manifest.json`, a página de init (`index.html`) e a página do dashboard (`pipe-view.html`). Todos os caminhos são relativos, então o mesmo build funciona em qualquer host. O CI (GitHub Actions) roda typecheck, testes e build a cada push e pull request.
+O build sai em `dist/`, com `manifest.json`, a página de init (`index.html`) e a página do dashboard (`pipe-view.html`). Todos os caminhos são relativos, então o mesmo build funciona em qualquer host. O CI (GitHub Actions) roda typecheck, testes unitários, testes de integração e build a cada push na `main` ou na `develop` e a cada pull request.
 
 ## Rodar dentro da Pipefy
 
