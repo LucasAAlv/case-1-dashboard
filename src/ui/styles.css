@@ -177,6 +177,8 @@ button:disabled {
 
 .grid {
   display: grid;
+  /* Sem isso, abrir "Ver dados" num gráfico estica todos os da mesma linha. */
+  align-items: start;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr));
   gap: 16px;
 }
