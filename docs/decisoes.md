@@ -148,3 +148,15 @@ Uma revisão no nível *high* encontrou 14 pontos. Foram corrigidos, com teste q
 - Separar por sufixo (`*.int.test.ts`) sem mover arquivos: menos mudança, mas a separação fica menos visível.
 
 **Motivo:** a separação fica explícita na estrutura e no CI. Uma falha mostra de cara se quebrou uma regra isolada ou a combinação dos módulos. Com cerca de 80 testes, todos em menos de 1 s, não há ganho de tempo; o ganho é de clareza.
+
+---
+
+## D12. `develop` para integração, `main` para o que está publicado (22/11/2026)
+
+**Escolha:** os PRs têm base `develop` e entram com merge commit. A `main` só recebe a `develop` por um PR de release, e o GitHub Pages só é publicado a partir da `main`, depois do release (roteiro no [README](../README.md#rodar-dentro-da-pipefy)).
+
+**Alternativas:**
+- Só a `main`, com os PRs entrando direto nela: menos passos, mas qualquer merge fica a um passo de ser publicado, e a `main` deixa de dizer o que está no ar.
+- Merge por squash ou rebase: histórico mais curto, mas perde os commits pequenos de cada PR, que são parte do que é avaliado.
+
+**Motivo:** a Pipefy relê o manifest a cada carregamento, então uma publicação quebrada afeta todos os usuários na hora. Com a `main` igual ao que está no `gh-pages`, um merge na `develop` nunca chega aos usuários sem um release explícito. O merge commit preserva a sequência de commits de cada PR.
