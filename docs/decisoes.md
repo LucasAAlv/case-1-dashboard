@@ -12,7 +12,7 @@ Registro das decisões do Case 1, com data, opção escolhida, alternativas e mo
 - Backend com token de Service Account: um token compartilhado lê tudo o que a conta de serviço enxerga, e o isolamento por permissão teria de ser reimplementado à mão. Isso viola a regra de que cada usuário só vê o que as próprias permissões deixam.
 - Backend com o token de `p.getAuthToken()`: a documentação não diz o formato, a validade nem se o token serve para chamar a API como o usuário. Fica como evolução, depois de testado.
 
-**Motivo:** o `p.query` executa "with the full permissions and access rights of whoever is using your app". Com isso, o isolamento de permissões vem da própria Pipefy, e não de código nosso. Também não há segredo para guardar nem servidor para manter.
+**Motivo:** o `p.query` executa "with the full permissions and access rights of whoever is using your app". Com isso, o isolamento de permissões vem da própria Pipefy, e não do código do app. Também não há segredo para guardar nem servidor para manter.
 
 ---
 
@@ -41,9 +41,9 @@ Registro das decisões do Case 1, com data, opção escolhida, alternativas e mo
 
 ---
 
-## D4. Marca d'água = início do último sync completo (19/11/2026, ajusta a decisão 2 do case)
+## D4. Marca d'água = início do último sync concluído (19/11/2026, substitui o "último `updated_at` visto")
 
-**Escolha:** depois de um sync completo, a marca d'água passa a ser o instante em que ele começou. O próximo incremental filtra `updated_at gte <marca - 5 min>` e faz upsert por id.
+**Escolha:** depois de um sync concluído (todas as páginas gravadas), a marca d'água passa a ser o instante em que ele começou. O próximo incremental filtra `updated_at gte <marca - 5 min>` e faz upsert por id.
 
 **Alternativa original:** a marca seria o último `updated_at` visto, menos alguns segundos.
 
@@ -86,7 +86,9 @@ Registro das decisões do Case 1, com data, opção escolhida, alternativas e mo
 
 ## D7. Retry só para erros retentáveis (19/11/2026)
 
-**Escolha:** backoff exponencial para falha de transporte, `USAGE_LIMIT_EXCEEDED`, `TIMEOUT` e `INTERNAL_SERVER_ERROR`. Erro de permissão ou de sintaxe falha na hora.
+**Escolha:** backoff exponencial para falha de transporte (o `errors` vem como um único `Error`) e para `USAGE_LIMIT_EXCEEDED`. Os outros códigos, como erro de permissão ou de sintaxe, falham na hora.
+
+**Revisto em 22/11/2026:** a primeira versão também repetia `TIMEOUT` e `INTERNAL_SERVER_ERROR`, que não estão na tabela de códigos da Pipefy ([Status codes and Error Handling](https://developers.pipefy.com/reference/status-and-error-handling)). Nessa tabela, 5xx e 429 são status HTTP, e não `extensions.code`. A documentação do SDK não diz como o `p.query` entrega esses status; a hipótese, não verificada, é que cheguem como falha de transporte, que é repetida. As páginas da Pipefy também divergem sobre o `USAGE_LIMIT_EXCEEDED`: a de status o descreve como limite de requisições por período, e outras duas o ligam ao limite de envio de e-mail. O app o trata como estouro de cota.
 
 **Motivo:** o `p.query` nunca rejeita a promise. O erro vem em `errors`, como array ou como um único `Error`, e pode vir com HTTP 200. Uma resposta parcial (`data` junto com `errors`) também conta como erro, porque o sync precisa de páginas completas.
 
@@ -130,3 +132,31 @@ Uma revisão no nível *high* encontrou 14 pontos. Foram corrigidos, com teste q
 **Alternativa:** seguir o `prefers-color-scheme` em qualquer lugar, como na primeira versão.
 
 **Motivo:** a validação no pipe mostrou o problema. Num sistema em modo escuro, o dashboard ficava escuro dentro da tela clara da Pipefy. O tema do iframe segue o sistema operacional, não a Pipefy, e a documentação do SDK não mostra um jeito de saber o tema da Pipefy. O tema escuro continua nos tokens, validado, e volta a valer se essa informação aparecer.
+
+---
+
+## D11. Testes separados em unitários e de integração (21/11/2026)
+
+**Escolha:** os testes ficam em `test/unit` e `test/integration`, e cada pasta espelha a estrutura de `src/`. Os scripts `test:unit` e `test:integration` rodam cada grupo, e o CI roda os dois em etapas separadas. O `npm test` continua rodando tudo.
+
+**Critério:**
+- **Unitário:** uma unidade isolada. Função pura, ou um módulo com o SDK simulado por `vi.fn`.
+- **Integração:** mais de um módulo real trabalhando junto (motor de sync, parser e marca d'água), ou a biblioteca de armazenamento real (`idb` sobre o `fake-indexeddb`).
+
+**Alternativas:**
+- Manter uma pasta por módulo e só documentar a classificação: custo zero, mas a separação não aparece na estrutura nem no CI.
+- Separar por sufixo (`*.int.test.ts`) sem mover arquivos: menos mudança, mas a separação fica menos visível.
+
+**Motivo:** a separação fica explícita na estrutura e no CI. Uma falha mostra de cara se quebrou uma regra isolada ou a combinação dos módulos. Com cerca de 80 testes, todos em menos de 1 s, não há ganho de tempo; o ganho é de clareza.
+
+---
+
+## D12. `develop` para integração, `main` para o que está publicado (22/11/2026)
+
+**Escolha:** os PRs têm base `develop` e entram com merge commit. A `main` só recebe a `develop` por um PR de release, e o GitHub Pages só é publicado a partir da `main`, depois do release (roteiro no [README](../README.md#rodar-dentro-da-pipefy)).
+
+**Alternativas:**
+- Só a `main`, com os PRs entrando direto nela: menos passos, mas qualquer merge fica a um passo de ser publicado, e a `main` deixa de dizer o que está no ar.
+- Merge por squash ou rebase: histórico mais curto, mas perde os commits pequenos de cada PR, que são parte do que é avaliado.
+
+**Motivo:** a Pipefy relê o manifest a cada carregamento, então uma publicação quebrada afeta todos os usuários na hora. Com a `main` igual ao que está no `gh-pages`, um merge na `develop` nunca chega aos usuários sem um release explícito. O merge commit preserva a sequência de commits de cada PR.

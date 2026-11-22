@@ -1,8 +1,8 @@
 import type { CardRecord } from '../domain/card';
 
 /**
- * Agregação sobre o cache local (decisão 7 do case): group by + count, sum,
- * avg, min ou max, numa passada só. Com 20 mil cards, leva poucos milissegundos.
+ * Agregação sobre o cache local: group by + count, sum, avg, min ou max,
+ * numa passada só. Com 20 mil cards, leva poucos milissegundos.
  */
 
 export type Dimension =

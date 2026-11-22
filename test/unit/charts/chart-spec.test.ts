@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { MAX_CHARTS, MAX_DOUGHNUT_LIMIT, parseChartSpecs, type ChartSpec } from '../../src/charts/chart-spec';
-import { createSdkChartRepository } from '../../src/charts/chart-repository';
-import type { PipefyClient } from '../../src/pipefy/sdk';
+import { MAX_CHARTS, MAX_DOUGHNUT_LIMIT, parseChartSpecs, type ChartSpec } from '../../../src/charts/chart-spec';
+import { createSdkChartRepository } from '../../../src/charts/chart-repository';
+import type { PipefyClient } from '../../../src/pipefy/sdk';
 
 const valid: ChartSpec = {
   id: 'a1',

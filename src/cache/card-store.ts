@@ -8,7 +8,7 @@ export interface SyncState {
   cursor: string | null;
   /** Início da primeira tentativa da carga inicial (UTC): vira a marca d'água ao fim da carga. */
   startedAt: string | null;
-  /** Marca d'água do incremental (UTC): início do último sync completo. */
+  /** Marca d'água do incremental (UTC): início do último sync concluído. */
   watermark: string | null;
   lastSyncAt: string | null;
   /** `cards_count` do pipe na última reconciliação de ids. */

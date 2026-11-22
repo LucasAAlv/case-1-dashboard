@@ -1,8 +1,8 @@
 import 'fake-indexeddb/auto';
 import { afterEach, describe, expect, it } from 'vitest';
-import { cacheName, deleteCardStore, openCardStore } from '../../src/cache/idb-store';
-import type { SyncState } from '../../src/cache/card-store';
-import type { CardRecord } from '../../src/domain/card';
+import { cacheName, deleteCardStore, openCardStore } from '../../../src/cache/idb-store';
+import type { SyncState } from '../../../src/cache/card-store';
+import type { CardRecord } from '../../../src/domain/card';
 
 const PIPE = '307434671';
 
@@ -105,5 +105,21 @@ describe('IndexedDB store', () => {
     await expect(store.commit({ upsert: [card('2'), broken], state: state('100') })).rejects.toThrow();
     expect(await store.ids()).toEqual(['1']);
     expect(await store.loadState()).toMatchObject({ cursor: '50' });
+  });
+
+  it('limpa o cache mesmo com outra aba segurando o banco aberto', async () => {
+    let closedByOtherTab = false;
+    const otherTab = await openCardStore('u1', PIPE, {
+      onClosedByOtherTab: () => (closedByOtherTab = true),
+    });
+    await otherTab.commit({ upsert: [card('1')], state: state('50') });
+
+    // Sem o `blocking`, o `deleteDB` ficaria esperando a outra conexão fechar.
+    await deleteCardStore('u1', PIPE);
+
+    expect(closedByOtherTab).toBe(true);
+    const reopened = await open('u1');
+    expect(await reopened.count()).toBe(0);
+    expect(await reopened.loadState()).toBeNull();
   });
 });

@@ -3,8 +3,8 @@ import {
   GraphQLRequestError,
   createSdkClient,
   withRetry,
-} from '../../src/sync/graphql-client';
-import type { PipefyClient, PipefyQueryResult } from '../../src/pipefy/sdk';
+} from '../../../src/sync/graphql-client';
+import type { PipefyClient, PipefyQueryResult } from '../../../src/pipefy/sdk';
 
 function sdkReturning(...results: PipefyQueryResult<unknown>[]): PipefyClient {
   const query = vi.fn();
@@ -40,6 +40,13 @@ describe('createSdkClient', () => {
       sdkReturning({ errors: [{ message: 'limit', extensions: { code: 'USAGE_LIMIT_EXCEEDED' } }] }),
     );
     await expect(client.request('{ me { id } }')).rejects.toMatchObject({ retryable: true });
+  });
+
+  it('não repete códigos que não estão na tabela oficial de erros', async () => {
+    for (const code of ['TIMEOUT', 'INTERNAL_SERVER_ERROR']) {
+      const client = createSdkClient(sdkReturning({ errors: [{ message: 'x', extensions: { code } }] }));
+      await expect(client.request('{ me { id } }')).rejects.toMatchObject({ retryable: false });
+    }
   });
 
   it('lança erro quando não há data nem errors', async () => {

@@ -4,7 +4,7 @@ import {
   emailDomain,
   parseBrDate,
   parseDecimal,
-} from '../../src/domain/normalize';
+} from '../../../src/domain/normalize';
 
 describe('parseDecimal', () => {
   it('converte a string com ponto decimal que a API devolve', () => {

@@ -5,6 +5,7 @@ App que roda dentro da Pipefy, como uma visão do pipe, e permite montar gráfic
 - Arquitetura, custo em chamadas, limitações e boas práticas: [docs/arquitetura.md](docs/arquitetura.md)
 - Decisões, com alternativas e motivos: [docs/decisoes.md](docs/decisoes.md)
 - Leitura da documentação do SDK de Apps: [docs/pesquisa-sdk-apps.md](docs/pesquisa-sdk-apps.md)
+- Débito técnico e o que eu faria com mais tempo: [docs/debito-tecnico.md](docs/debito-tecnico.md)
 
 **Stack:** TypeScript, Vite, Vitest, Chart.js e IndexedDB (via `idb`). Não há backend: as chamadas à API passam pelo SDK de Apps, com as permissões do usuário logado.
 
@@ -31,9 +32,23 @@ Abra `http://localhost:5173/pipe-view.html`. Fora da Pipefy não existe `appID` 
 
 ## Testes e build
 
+Todos os testes:
+
 ```bash
 npm test
 ```
+
+Só os unitários (`test/unit`) ou só os de integração (`test/integration`):
+
+```bash
+npm run test:unit
+```
+
+```bash
+npm run test:integration
+```
+
+O que cada grupo cobre está em [docs/arquitetura.md](docs/arquitetura.md#testes).
 
 ```bash
 npm run typecheck
@@ -43,7 +58,7 @@ npm run typecheck
 npm run build
 ```
 
-O build sai em `dist/`, com `manifest.json`, a página de init (`index.html`) e a página do dashboard (`pipe-view.html`). Todos os caminhos são relativos, então o mesmo build funciona em qualquer host. O CI (GitHub Actions) roda typecheck, testes e build a cada push e pull request.
+O build sai em `dist/`, com `manifest.json`, a página de init (`index.html`) e a página do dashboard (`pipe-view.html`). Todos os caminhos são relativos, então o mesmo build funciona em qualquer host. O CI (GitHub Actions) roda typecheck, testes unitários, testes de integração e build a cada push na `main` ou na `develop` e a cada pull request.
 
 ## Rodar dentro da Pipefy
 

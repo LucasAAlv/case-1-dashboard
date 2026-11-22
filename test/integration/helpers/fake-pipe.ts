@@ -1,7 +1,7 @@
-import type { RawCard } from '../../src/domain/card-parser';
-import type { CardsPage, PipefyApi } from '../../src/sync/pipefy-api';
-import type { CardRecord } from '../../src/domain/card';
-import type { CardStore, StoreCommit, SyncState } from '../../src/cache/card-store';
+import type { RawCard } from '../../../src/domain/card-parser';
+import type { CardsPage, PipefyApi } from '../../../src/sync/pipefy-api';
+import type { CardRecord } from '../../../src/domain/card';
+import type { CardStore, StoreCommit, SyncState } from '../../../src/cache/card-store';
 
 export function rawCard(id: number, updatedAt = '2026-11-12T18:56:30Z', valor = '100'): RawCard {
   return {

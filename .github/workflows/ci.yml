@@ -22,7 +22,9 @@ jobs:
       - run: npm ci
       - name: Typecheck
         run: npm run typecheck
-      - name: Testes
-        run: npm test
+      - name: Testes unitários
+        run: npm run test:unit
+      - name: Testes de integração
+        run: npm run test:integration
       - name: Build
         run: npm run build

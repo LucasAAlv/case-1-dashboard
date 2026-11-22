@@ -117,7 +117,7 @@ sequenceDiagram
 ### Incremental
 
 - Filtra `updated_at gte <marca d'água − 5 min>` e faz upsert por id.
-- A marca d'água é o **início do último sync completo**. Tudo o que mudou antes desse instante já foi lido; o que mudou durante ou depois tem `updated_at` posterior e entra no próximo sync (ver D4 em [decisoes.md](decisoes.md)).
+- A marca d'água é o **início do último sync concluído**. Tudo o que mudou antes desse instante já foi lido; o que mudou durante ou depois tem `updated_at` posterior e entra no próximo sync (ver D4 em [decisoes.md](decisoes.md)).
 - Se o incremental cair no meio, a marca não avança e o próximo sync repete a janela.
 
 ### Exclusões
@@ -180,11 +180,11 @@ Também ficou confirmado na prática:
 
 ## Limitações conhecidas
 
-- **A primeira carga é lenta:** são cerca de 400 chamadas em sequência. Ela é retomável e mostra o progresso, mas a primeira abertura de cada usuário em cada navegador paga esse custo. O tempo real precisa ser medido na org.
+- **A primeira carga é lenta:** são cerca de 400 chamadas em sequência. Ela é retomável e mostra o progresso, mas a primeira abertura de cada usuário em cada navegador paga esse custo. No pipe do case, foram 401 chamadas e cerca de 2 min e 20 s (ver "Medido dentro da Pipefy").
 - **Cota da API** (Central de Ajuda, lida em 19/11/2026):
   - **Por período:** 500 requisições a cada 30 s; quem passa disso fica 5 min sem acesso à API. A carga é sequencial e fica bem abaixo desse ritmo.
   - **Por mês, conforme o plano:** até 20 chamadas à API no Starter, 500 no Business e 10.000 no Enterprise; no Unlimited, o limite é sob medida. Num plano Business, uma única carga completa gastaria quase o mês todo; é o argumento mais forte para o cache e o sync incremental.
-  - **Na org do case:** a query `apiUsageStats` (só admin) devolveu `limit: null`, sem limite configurado, e `Counter: 0` em novembro, mesmo depois de chamadas feitas pelo GraphiQL. Pelo jeito, chamadas feitas com a sessão do navegador não entram nesse contador. É uma inferência, não está documentado; resta confirmar se as chamadas do SDK (`p.query`) contam.
+  - **Na org do case:** a query `apiUsageStats` (só admin) devolveu `limit: null`, sem limite configurado, e `Counter: 0` em novembro, mesmo depois de chamadas feitas pelo GraphiQL. A hipótese é que chamadas feitas com a sessão do navegador não entram nesse contador. É uma inferência, não está documentado; resta confirmar se as chamadas do SDK (`p.query`) contam.
   - **Estouro:** é repetido com backoff exponencial, até 4 vezes. Se ainda falhar, o progresso fica salvo e o sync pode ser retomado.
 - **Relógio do navegador:** a marca d'água usa o relógio local com margem de 5 min. Um relógio adiantado além disso pode perder alterações.
 - **Mudança de visibilidade:** se o usuário passar a enxergar cards antigos ou perder acesso a eles sem que o `cards_count` mude, o app não detecta. "Limpar cache local" força uma carga completa.
@@ -195,6 +195,26 @@ Também ficou confirmado na prática:
 - **Cursor recusado:** se a API passar a recusar o cursor salvo de uma carga interrompida, a retomada falha sempre com o mesmo erro. "Limpar cache local" recomeça do zero.
 - **Semântica do `cards_count`:** foi confirmado que ele conta os cards da fase concluída (deu 20.000, todos em "Concluded"). Não foi testado se ele respeita as permissões de quem consulta. Se não respeitar, um usuário com visão parcial faz uma reconciliação (~400 chamadas) a cada mudança no total do pipe.
 - **Eventos do pipe-view:** segundo a documentação, o `onCardUpdated` cobre só mudanças de vencimento. As demais edições chegam pelo incremental, quando o app abre ou quando o usuário clica em "Sincronizar agora".
+
+---
+
+## Testes
+
+Os testes ficam em duas pastas, e cada uma espelha a estrutura de `src/` (D11 em [decisoes.md](decisoes.md)). O CI roda os dois grupos em etapas separadas.
+
+| Grupo | Arquivos | O que exercita |
+| --- | --- | --- |
+| **Unitários** (`test/unit`) | `domain/normalize`, `domain/card-parser`, `sync/watermark`, `analytics/aggregate` | Funções puras: conversão de número e data, sufixo da empresa, campos fora de ordem ou vazios, marca d'água, agregação com "Outros" e situação de vencimento |
+| | `sync/graphql-client`, `sync/pipefy-api`, `charts/chart-spec` | Uma unidade com o SDK simulado (`vi.fn`): formatos de `errors`, retry e backoff, texto e escape da query, validação do `pipeId`, visões salvas e fila de gravação |
+| **Integração** (`test/integration`) | `sync/sync-engine` | O motor de sync real, com o parser e a marca d'água reais, sobre um pipe falso (paginação por cursor e filtro por `updated_at`) e um cache em memória: carga retomável, incremental, reconciliação, troca de usuário e página sem cursor |
+| | `cache/idb-store` | A biblioteca `idb` real sobre o `fake-indexeddb`: upsert por id, cards e estado na mesma transação, um banco por usuário e limpeza com outra aba aberta |
+
+**O que não tem teste automatizado:**
+
+- A tela e a orquestração (`src/app`, `src/ui`, `src/charts/render-chart.ts`): mutex do sync, sync pedido durante outro, troca de sessão na tela e listeners do `pipe-view`.
+- A entrada da página (`src/pipe-view.ts`): aviso fora da Pipefy, tema claro fixo dentro dela e falha no `init` do SDK.
+- Ponta a ponta no navegador.
+- O comportamento real da API e do iframe da Pipefy. O SDK só funciona dentro do iframe, com o `appID` que a Pipefy coloca na URL, então isso foi validado à mão dentro do pipe e medido (ver "Medido dentro da Pipefy").
 
 ---
 

@@ -1,6 +1,7 @@
 /**
- * Conversões aplicadas uma única vez, na entrada do sync (decisão 6 do case):
- * o gráfico nunca reprocessa strings da API.
+ * Conversões aplicadas uma única vez, na entrada do sync: o gráfico nunca
+ * reprocessa strings da API. A exceção é a situação de vencimento, calculada
+ * na hora porque depende do dia de hoje (D8 em docs/decisoes.md).
  */
 
 type Maybe = string | null | undefined;

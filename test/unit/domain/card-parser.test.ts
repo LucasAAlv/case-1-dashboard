@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseCard, type RawCard } from '../../src/domain/card-parser';
+import { parseCard, type RawCard } from '../../../src/domain/card-parser';
 
 // Formato real devolvido por `allCards` (validado no GraphiQL em 19/11/2026).
 const raw: RawCard = {
