@@ -165,6 +165,7 @@ Os testes cobrem o domínio, o sync e o cache (ver [arquitetura.md](arquitetura.
 
 - `src/app/dashboard-app.ts`: o mutex entre sync e limpeza, o sync pedido durante outro, a troca de sessão, a remoção por `onCardDeleted` e o tratamento de falha ao ler as visões. Várias correções da D9 estão aqui.
 - `src/ui/dashboard-view.ts` e `src/charts/render-chart.ts`: o construtor de gráficos e a renderização.
+- `src/pipe-view.ts`: o aviso fora da Pipefy, o tema claro fixo dentro dela e a falha no `init` do SDK.
 - O fluxo ponta a ponta no navegador.
 
 Os testes rodam em Node, sem DOM.

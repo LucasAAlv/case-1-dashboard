@@ -212,6 +212,7 @@ Os testes ficam em duas pastas, e cada uma espelha a estrutura de `src/` (D11 em
 **O que não tem teste automatizado:**
 
 - A tela e a orquestração (`src/app`, `src/ui`, `src/charts/render-chart.ts`): mutex do sync, sync pedido durante outro, troca de sessão na tela e listeners do `pipe-view`.
+- A entrada da página (`src/pipe-view.ts`): aviso fora da Pipefy, tema claro fixo dentro dela e falha no `init` do SDK.
 - Ponta a ponta no navegador.
 - O comportamento real da API e do iframe da Pipefy. O SDK só funciona dentro do iframe, com o `appID` que a Pipefy coloca na URL, então isso foi validado à mão dentro do pipe e medido (ver "Medido dentro da Pipefy").
 

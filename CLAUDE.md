@@ -109,7 +109,7 @@ Convenções:
 
 - `describe` com o nome da função ou do módulo, e `it` com uma frase em português que diz o comportamento ("devolve null para vazio, nulo ou texto não numérico").
 - Toda regra nova de parser, conversão, marca d'água ou agregação ganha teste, incluindo campo vazio ou nulo e campos fora de ordem.
-- A tela e a orquestração (`src/app`, `src/ui`, `render-chart.ts`) não têm teste automatizado (DT7). Mudanças nelas são validadas no `npm run dev` com o SDK falso e, quando dependem da Pipefy, dentro do pipe.
+- A tela, a orquestração e a entrada da página (`src/app`, `src/ui`, `render-chart.ts`, `pipe-view.ts`) não têm teste automatizado (DT7). Mudanças nelas são validadas no `npm run dev` com o SDK falso e, quando dependem da Pipefy, dentro do pipe.
 
 ## Padrão para novas funcionalidades
 
