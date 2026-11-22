@@ -45,7 +45,19 @@
   box-sizing: border-box;
 }
 
+/*
+ * A Pipefy cria o iframe do pipe-view com `scrolling="no"` e altura fixa, então
+ * a página em si nunca rola. O `body` vira o contêiner de rolagem, com a altura
+ * do iframe: com `overflow` no `html`, o do `body` deixa de ir para a janela.
+ */
+html {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
+  height: 100%;
+  overflow-y: auto;
   margin: 0;
   background: var(--surface-0);
   color: var(--text-primary);

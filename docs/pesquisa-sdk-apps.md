@@ -36,6 +36,7 @@ Tudo aqui vem da documentação, **não foi testado na prática**. Quando a docu
 - A página do `pipe-view` recebe `p` e `pipe` (`{ id, name }`) e **precisa chamar `PipefyApp.render(cb)`** quando terminar de carregar. Sem isso, a Pipefy devolve o usuário ao Kanban.
 - **Não use `p.render()`.** A documentação diz que está quebrado e devolve uma promise rejeitada.
 - `PipefyApp.resizeTo` dá erro no `pipe-view`, porque o frame já ocupa a largura toda. A documentação não fala de altura nem de rolagem.
+- **Medido em 20/11/2026:** a Pipefy cria o iframe do `pipe-view` com `scrolling="no"` e altura fixa (a área visível abaixo das abas do pipe). A página do app nunca rola sozinha: o app precisa de um contêiner de rolagem próprio. Aqui, é o `body` (ver `src/ui/styles.css`).
 
 ### 1.2. As chamadas pelo SDK rodam como o usuário logado
 
