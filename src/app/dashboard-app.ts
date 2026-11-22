@@ -183,10 +183,16 @@ export async function startDashboard(sdk: PipefyAppGlobal, p: PipefyClient, root
     });
   }
 
-  /** Para de sincronizar e avisa o usuário. O que já está na tela continua visível. */
+  /**
+   * Para de sincronizar e de editar as visões, e avisa o usuário. O que já está
+   * na tela continua visível. Depois de uma troca de sessão, o `p.set` gravaria
+   * as visões deste usuário nas do novo.
+   */
   function halt(message: string) {
     halted = true;
     clearTimeout(liveTimer);
+    chartsEditable = false;
+    view.setChartsEditable(false);
     view.setStatus(message, 'error');
     view.setBusy(true);
   }
