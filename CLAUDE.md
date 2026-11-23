@@ -15,7 +15,7 @@ Antes de propor qualquer mudança de desenho, leia:
 - [docs/decisoes.md](docs/decisoes.md): decisões D1 a D12, com alternativas e motivos;
 - [docs/arquitetura.md](docs/arquitetura.md): fluxo de sync, custo em chamadas, limitações e testes;
 - [docs/pesquisa-sdk-apps.md](docs/pesquisa-sdk-apps.md): o que foi lido e testado do SDK de Apps;
-- [docs/debito-tecnico.md](docs/debito-tecnico.md): DT1 a DT8, o que se sabe que falta.
+- [docs/debito-tecnico.md](docs/debito-tecnico.md): DT1 a DT9, o que se sabe que falta.
 
 ## Stack
 

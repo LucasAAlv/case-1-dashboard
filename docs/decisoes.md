@@ -62,7 +62,7 @@ Registro das decisões do Case 1, com data, opção escolhida, alternativas e mo
 
 ## D5. Reconciliação de exclusões pelo `cards_count` (19/11/2026)
 
-**Escolha:** a cada sync, o app compara o `cards_count` do pipe com a contagem do cache. Se forem diferentes, pagina o pipe inteiro, faz upsert de tudo e remove do cache o que não veio. O `cards_count` usado fica salvo, e a reconciliação só roda de novo quando ele mudar.
+**Escolha:** a cada sync, o app compara o `cards_count` do pipe com a contagem do cache. Se forem diferentes, pagina o pipe inteiro, faz upsert de tudo e remove do cache o que não veio. O `cards_count` usado fica salvo (o da carga inicial também, se ela rodar de uma vez), e a reconciliação só roda quando o total do pipe for diferente do salvo.
 
 **Motivo:** exclusões não aparecem no filtro por `updated_at`. Baixar os cards completos custa o mesmo número de chamadas que baixar só os ids, porque o `allCards` devolve 50 por página de qualquer jeito. Assim, na mesma passada, a reconciliação também recupera um card que falte no cache com `updated_at` antigo.
 
@@ -71,7 +71,7 @@ Registro das decisões do Case 1, com data, opção escolhida, alternativas e mo
 **Custo:** a reconciliação custa o mesmo número de páginas de uma carga completa, já que o `allCards` não tem outro jeito de listar ids.
 
 **Limitações:**
-- Uma criação somada a uma exclusão no mesmo intervalo mantém a contagem igual e esconde a exclusão. O listener `onCardDeleted` do `pipe-view` cobre as exclusões feitas com o app aberto.
+- Uma exclusão feita com o app fechado que devolve o total a um valor já reconciliado deixa o card no cache: as contagens divergem, mas a guarda do total salvo pula a reconciliação (texto revisto em 22/11/2026; a versão anterior dizia que a contagem ficava igual). Basta criar um card e excluir um card depois da carga inicial. O listener `onCardDeleted` do `pipe-view` cobre as exclusões feitas com o app aberto. Os casos estão em [arquitetura.md](arquitetura.md#limitações-conhecidas) e o conserto no [DT9](debito-tecnico.md#dt9-exclusão-que-devolve-o-total-a-um-valor-já-reconciliado-22112026).
 - Quando muda a visibilidade do usuário (ele passa a enxergar cards antigos ou perde acesso a eles), nenhuma das duas contagens muda, e o app não detecta isso sozinho. O botão "Limpar cache local" força uma carga completa.
 
 ---
