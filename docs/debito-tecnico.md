@@ -16,6 +16,7 @@ Cada item traz o estado atual, o risco, a proposta e o custo estimado.
 | [DT6](#dt6-gráficos-vazios-durante-a-carga-inicial-21112026). Gráficos vazios durante a carga inicial | Baixa | 1 a 2 h | Não |
 | [DT7](#dt7-tela-e-orquestração-sem-teste-automatizado-21112026). Tela e orquestração sem teste automatizado | Média | 1 a 2 dias | Não |
 | [DT8](#dt8-formatação-sem-ferramenta-que-a-garanta-21112026). Formatação sem ferramenta que a garanta | Baixa | 1 a 2 h | Não |
+| [DT9](#dt9-exclusão-que-devolve-o-total-a-um-valor-já-reconciliado-22112026). Exclusão que devolve o total a um valor já reconciliado | Média | 1 a 2 h | Não (só um campo no `meta`) |
 
 ---
 
@@ -198,3 +199,39 @@ O código está consistente: indentação de 2 espaços, sem tabs, sem espaço n
 ### Custo
 
 1 a 2 h para os itens 1 e 2. O item 3 depende de quantos avisos aparecerem. Os itens 2 e 3 acrescentam dependências de desenvolvimento e **precisam de decisão**.
+
+---
+
+## DT9. Exclusão que devolve o total a um valor já reconciliado (22/11/2026)
+
+### Estado atual
+
+O sync só reconcilia se o `cards_count` for diferente da contagem do cache **e** diferente do `reconciledPipeCount`, que é o total da última carga ou reconciliação (`sync` em `src/sync/sync-engine.ts`). A segunda condição existe para o usuário com visão parcial, que teria contagens diferentes em toda abertura (D5). Ela guarda só o total do pipe, e não a contagem do cache que correspondia a ele. Quando o total volta a esse valor, uma divergência nova passa por já conferida.
+
+Sequências reproduzidas com o motor de sync real, o pipe falso e 120 cards, num teste que não está no repositório:
+
+| Sequência, com o app fechado | Pipe | Cache | Total salvo | Reconcilia? |
+| --- | --- | --- | --- | --- |
+| Carga; cria um (sync); exclui um, o mesmo ou outro (sync) | 120 | 121 | 120 | Não |
+| Carga; exclui um (sync, reconcilia); cria um (sync); exclui outro (sync) | 119 | 120 | 119 | Não |
+| Carga; cria um e exclui outro no mesmo intervalo (sync) | 120 | 121 | 120 | Não |
+
+### Risco
+
+Um card excluído continua nos gráficos, sem aviso, até um sync encontrar um total diferente do salvo. A linha de status mostra o sync como concluído. Com o app aberto, o `onCardDeleted` remove o card na hora. Se a divergência já existe, "Limpar cache local" a corrige, ao custo de uma carga completa.
+
+### Proposta
+
+Guardar o par formado pelo `cards_count` do pipe e pela contagem do cache na última carga ou reconciliação, e pular só quando os **dois** forem iguais aos atuais:
+
+- campo `reconciledCacheCount` no `SyncState`, gravado junto com o `reconciledPipeCount`, com a contagem do cache depois das remoções;
+- cache antigo, sem o campo, reconcilia na próxima divergência (até ~400 chamadas, uma vez);
+- testes das três sequências no `test/integration/sync/sync-engine.test.ts`, além do caso de visão parcial, que já existe.
+
+Num protótipo fora do repositório, as três sequências passaram a reconciliar, e o caso de visão parcial continuou em 2 chamadas.
+
+**O que continua aberto:** se o `cards_count` não respeitar as permissões (não verificado), para quem não enxerga todos os cards, um card novo fora da visão dele e a exclusão de um card visível, no mesmo intervalo, repetem o par. Em troca, para esse mesmo usuário, um card novo visível sem mudança no total passa a reconciliar sem necessidade.
+
+### Custo
+
+1 a 2 h, com testes. Muda o modelo de dados (um campo a mais no `meta`, sem subir o `VERSION`), então **precisa de decisão**. Exige publicar de novo.
