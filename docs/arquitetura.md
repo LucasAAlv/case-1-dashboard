@@ -101,7 +101,7 @@ sequenceDiagram
     App->>API: allCards(filter: updated_at gte marca - 5 min)
     App->>DB: upsert por id
   end
-  opt cards_count ≠ cards no cache (e mudou desde a última conferência)
+  opt cards_count ≠ cards no cache (e ≠ do total já reconciliado)
     App->>API: allCards paginado (reconciliação)
     App->>DB: upsert + remove os ausentes
   end
@@ -123,7 +123,7 @@ sequenceDiagram
 ### Exclusões
 
 - **Com o app aberto:** o evento `onCardDeleted` do `pipe-view` remove o card do cache na hora.
-- **Com o app fechado:** a cada sync, o app compara o `cards_count` do pipe com o cache. Se forem diferentes e o `cards_count` tiver mudado desde a última conferência, pagina o pipe de novo, faz upsert e remove os ausentes.
+- **Com o app fechado:** a cada sync, o app compara o `cards_count` do pipe com o cache. Se forem diferentes e o `cards_count` não for o mesmo da última carga ou reconciliação, pagina o pipe de novo, faz upsert e remove os ausentes. Essa guarda evita repetir ~400 chamadas a cada abertura, mas deixa passar um caso (veja as limitações).
 
 ### Eventos ao vivo e concorrência
 
@@ -150,7 +150,7 @@ Valores para o pipe do case (20 mil cards, 50 por página):
 | Carga inicial completa | 1 (`me` + `cards_count`) + 400 páginas = **401** |
 | Sync sem mudanças | 1 (`me` + `cards_count`) + 1 (incremental vazio) = **2** |
 | Sync com *k* cards alterados (*k* ≥ 1) | 1 + ⌈*k*/50⌉, +1 se as contagens divergirem (confirmação antes de reconciliar) |
-| Reconciliação (só quando o `cards_count` muda) | +400 |
+| Reconciliação (só quando o `cards_count` difere do cache e do total já reconciliado) | +400 |
 
 Uma abertura comum custa **3 chamadas**, contra cerca de 400 se o app baixasse tudo a cada vez. O app mostra, depois de cada sync, quantas chamadas ele fez.
 
@@ -188,7 +188,12 @@ Também ficou confirmado na prática:
   - **Estouro:** é repetido com backoff exponencial, até 4 vezes. Se ainda falhar, o progresso fica salvo e o sync pode ser retomado.
 - **Relógio do navegador:** a marca d'água usa o relógio local com margem de 5 min. Um relógio adiantado além disso pode perder alterações.
 - **Mudança de visibilidade:** se o usuário passar a enxergar cards antigos ou perder acesso a eles sem que o `cards_count` mude, o app não detecta. "Limpar cache local" força uma carga completa.
-- **Criação + exclusão no mesmo intervalo** mantém a contagem e esconde a exclusão até o próximo `cards_count` diferente. Com o app aberto, o evento `onCardDeleted` cobre esse caso.
+- **Exclusão que devolve o total a um valor já reconciliado:** com o app fechado, um card excluído pode ficar no cache. O `cards_count` e o cache divergem, mas o total é igual ao da última carga ou reconciliação, e a guarda pula a conferência. Acontece de três formas:
+  - depois da carga inicial, que já guarda o total: criar um card num intervalo entre syncs e excluir um card (o mesmo ou outro) no seguinte;
+  - depois de uma reconciliação: excluir um card (o app reconcilia e guarda o total), criar outro e depois excluir mais um, em syncs separados;
+  - criar um card e excluir outro no mesmo intervalo, quando o total do pipe é o já reconciliado.
+
+  A divergência fica até um sync encontrar um total diferente do guardado. Com o app aberto, o evento `onCardDeleted` cobre o caso. "Limpar cache local" também resolve. O conserto está no [DT9](debito-tecnico.md#dt9-exclusão-que-devolve-o-total-a-um-valor-já-reconciliado-22112026).
 - **Troca de sessão durante uma carga longa:** o `me.id` é conferido no início de cada sync. Se a sessão mudar de usuário no meio de uma carga inicial ou de uma reconciliação, as páginas seguintes, já com as permissões do novo usuário, entram no cache do anterior. Conferir a cada página custaria uma chamada a mais por página. "Limpar cache local" refaz a carga.
 - **Mesmo navegador, vários usuários:** os bancos são separados por usuário, mas ficam no mesmo disco. O isolamento é do app, não do sistema operacional.
 - **Armazenamento do navegador:** o IndexedDB de um iframe de terceiro fica particionado pelo site de topo. O Safari pode apagar esses dados depois de alguns dias sem uso, e aí acontece uma nova carga completa.
